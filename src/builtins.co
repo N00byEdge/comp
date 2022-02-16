@@ -1,0 +1,27 @@
+import "src/identifiers.co" idents;
+import "src/identifier_types.co" ident_types;
+import "src/builtin_bits.co" bits;
+
+fn builtin_size_of(context) {
+	@todo();
+}
+
+fn builtin_memcpy() {
+	@todo();
+}
+
+fn add_builtin(name, fptr, type, node) {
+	node = idents.lookup(name, node);
+	@assert(idents.node_get_type(node) == ident_types.none);
+	idents.node_set_type(node, type);
+	idents.node_set_value(node, fptr);
+}
+
+fn create_builtin_node() [node] {
+	// Create the node itself
+	node = idents.alloc();
+
+	add_builtin("memcpy", builtin_size_of, ident_types.builtin_function_codegen, node);
+
+	add_builtin("size_of", builtin_size_of, ident_types.builtin_function_any, node);
+}

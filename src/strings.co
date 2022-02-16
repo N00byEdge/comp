@@ -1,0 +1,118 @@
+fn len(str) [result] {
+	result = 0;
+	loop {
+		if(@read8(str)) {
+			str += 1;
+			result += 1;
+			continue;
+		} else {
+			return result;
+		}
+	}
+}
+
+fn find(str, chr) [result] {
+	result = 0;
+	loop {
+		if(@read8(str) == chr) {
+			str += 1;
+			result += 1;
+			continue;
+		} else {
+			return result;
+		}
+	}
+}
+
+comptime dec_offset = '0' - 0x00;
+comptime hex_upper_offset = 'A' - 0x0A;
+comptime hex_lower_offset = 'a' - 0x0a;
+
+fn chr_val(ch) {
+	switch(ch) {
+		return ~1;
+	case '0'...'9':
+		return ch - dec_offset;
+	case 'a'...'z':
+		return ch - hex_lower_offset;
+	case 'A'...'Z':
+		return ch - hex_upper_offset;
+	}
+}
+
+// Optimized for parsing decimal ints
+fn parse_dec(str) [result, val] {
+	result = 0;
+	loop {
+		val = @read8(str);
+		val = chr_val(val);
+		if(val == ~1) {
+			return result;
+		} else {
+			result *= 10;
+			result += val;
+			str += 1;
+			continue;
+		}
+	}
+}
+
+// Optimized for parsing hexadecimal ints
+fn parse_hex(str) [result, val] {
+	result = 0;
+	loop {
+		val = @read8(str);
+		val = chr_val(val);
+		if(val == ~1) {
+			return result;
+		} else {
+			result <<= 4;
+			result += val;
+			str += 1;
+			continue;
+		}
+	}
+}
+
+// Generic int parser, for any base
+fn parse_base(str, base) [result, val] {
+	result = 0;
+	loop {
+		val = @read8(str);
+		val = chr_val(val);
+		if(val == ~1) {
+			return result;
+		} else {
+			result *= base;
+			result += val;
+			str += 1;
+			continue;
+		}
+	}
+}
+
+fn parse(str, base) {
+	switch(base) {
+		return parse_base(str, base);
+	case 10:
+		return parse_dec(str);
+	case 16:
+		return parse_dec(str);
+	}
+}
+
+// Detects base automatically based on prefix
+// or uses the fallback base
+fn parse_detect(str, fallback_base) [tmp] {
+	tmp = str + 1;
+	if(@read8(str) == '0') {
+		if(@read8(tmp) == 'x') {
+			tmp += 1;
+			return parse_hex(tmp);
+		} else {
+			return parse_base(str, fallback_base);
+		}
+	} else {
+		return parse_base(str, fallback_base);
+	}
+}

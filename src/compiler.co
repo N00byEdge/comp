@@ -1,0 +1,110 @@
+import "src/tokenizer.co" tokenizer;
+import "src/writer.co" writer;
+import "src/printer.co" printer;
+import "src/source.co" source;
+import "src/syscalls.co" syscalls;
+import "src/identifiers.co" idents;
+import "src/identifier_types.co" itypes;
+
+zeroes import_file_root[8];
+zeroes parse_top_level_ptr[8];
+
+fn parse_block() {
+
+}
+
+fn set_source_file(file_path) [fd] {
+    printer.print_string("File requested for set_source_file: '");
+    printer.print_string(file_path);
+    printer.print_string("'\n");
+
+    fd = syscalls.open(file_path, syscalls.O_RDONLY);
+    source.switch_file(fd);
+}
+
+fn parse_additional_file(file_path, new_node) [fd, root_stash, file_context_stash[source.file_context_size]] {
+    // Store our current context, the imported file has no idea!
+    root_stash = tokenizer.current_file_root[0];
+    source.stash_file_info(file_context_stash);
+
+    set_source_file(file_path);
+
+    @call(parse_top_level_ptr[0]);
+
+    // Return to monke
+    source.restore_file_info(file_context_stash);
+    tokenizer.current_file_root[0] = root_stash;
+}
+
+fn parse_file_if_needed(file_path) [node] {
+    node = import_file_root[0];
+    node = idents.lookup(file_path, node);
+
+    switch(idents.node_get_type(node)) {
+        printer.print_string("Bad filename ident type!\n");
+        printer.exit(1);
+
+    case itypes.none:
+        printer.print_string("Unknown file, let's parse it!\n");
+
+        idents.node_set_type(node, itypes.partially_parsed_filename);
+
+        parse_additional_file(file_path, node);
+
+        idents.node_set_type(node, itypes.fully_parsed_filename);
+        return idents.node_get_attribute(node);
+
+    case itypes.fully_parsed_filename:
+        printer.print_string("File already parsed, nothing to do\n");
+        return idents.node_get_attribute(node);        
+
+    case itypes.partially_parsed_filename:
+        printer.print_string("Circular import detected!\n");
+        printer.exit(1);
+    }
+}
+
+fn parse_import() [file_root, ident_node] {
+    tokenizer.discard();
+
+    tokenizer.expect_token(tokenizer.string_literal, "Expected a string literal after `import`.");
+    file_root = parse_file_if_needed(tokenizer.buffer);
+    tokenizer.discard();
+
+    tokenizer.expect_token(tokenizer.identifier, "Expected an identifier after filename.");
+    ident_node = tokenizer.peek_value();
+    tokenizer.discard();
+
+    // Assert the identifier is unused
+    @assert(idents.node_get_type(ident_node) == itypes.none);
+
+    idents.node_set_type(ident_node, itypes.variable_scope);
+    idents.node_set_attribute(ident_node, file_root);
+
+    tokenizer.expect_token(tokenizer.semicolon, "Expected `;` after import");
+}
+
+fn add_builtins_to_current_file() {
+
+}
+
+fn parse_top_level() {
+    printer.print_string("Top level!\n");
+    tokenizer.current_file_root[0] = idents.alloc();
+    add_builtins_to_current_file();
+
+    loop {
+        switch(tokenizer.peek_type()) {
+            @todo("parse_top_level default");
+        case tokenizer.keyword_import:
+            parse_import();
+            continue;
+        }
+    }
+}
+
+fn init(base_addr) {
+    writer.init(base_addr);
+    import_file_root[0] = idents.alloc();
+    parse_top_level_ptr[0] = parse_top_level;
+}

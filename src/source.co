@@ -1,0 +1,153 @@
+import "src/printer.co" printer;
+import "src/syscalls.co" syscalls;
+
+// All of these better be contigous :P
+zeroes file_len[8];
+zeroes file_buf[8];
+zeroes file_descriptor[8];
+zeroes file_name[0x100];
+
+zeroes current_index[8];
+zeroes current_line[8];
+zeroes current_column[8];
+
+comptime file_context_size = 0
+    + @size_of(file_len)
+    + @size_of(file_buf)
+    + @size_of(file_descriptor)
+    + @size_of(file_name)
+    + @size_of(current_index)
+    + @size_of(current_line)
+    + @size_of(current_column)
+;
+
+fn stash_file_info(out_ptr) {
+    @memcpy(out_ptr, file_len, file_context_size);
+}
+
+fn restore_file_info(in_ptr) {
+    @memcpy(file_len, in_ptr, file_context_size);
+}
+
+fn switch_file(fd) [filesz] {
+    filesz = syscalls.lseek(fd, 0, syscalls.SEEK_END);
+    @assert(filesz < 0x1000000);
+    
+    current_line[0] = 1;
+    current_column[0] = 1;
+    current_index[0] = 0;
+
+    // mmap the entire file
+    file_buf[0] = syscalls.mmap_file(fd, filesz);
+    file_len[0] = filesz;
+    file_descriptor[0] = fd;
+}
+
+fn end_of_file() [addr, len, fd] {
+    addr = file_buf[0];
+    len = file_len[0];
+    syscalls.munmap(addr, len);
+
+    fd = file_descriptor[0];
+    syscalls.close(fd);
+}
+
+fn print_line(target_line) [line, ptr, chr] {
+    line = 1;
+    ptr = file_buf[0];
+
+    // Loop until we reach the target line
+    if(line != target_line) {
+        loop {
+            if(@read8(ptr) == '\n') {
+                ptr += 1;
+                line += 1;
+                if(line == target_line) {
+                    break;
+                } else { }
+            } else {
+                ptr += 1;
+            }
+        }
+    } else { }
+
+    // We're at the first line we should print
+    loop {
+        chr = @read8(ptr);
+        printer.putchar(chr);
+        if(chr == '\n') {
+            return;
+        } else { }
+    }
+}
+
+fn print_current_line() [ptr, chr, idx] {
+    // Search backwards until we find the start of the file or a newline
+    idx = current_index;
+    ptr = file_buf + idx;
+    loop {
+        if(idx) {
+            idx -= 1;
+            ptr = file_buf + idx;
+            chr = @read8(ptr);
+            if(chr == '\n') {
+                break;
+            } else {
+                continue;
+            }
+        } else {
+            break;
+        }
+    }
+
+    @todo("print_current_line");
+}
+
+fn peek(idx) {
+    idx += current_index[0];
+
+    if(idx < file_len[0]) {
+        idx += file_buf[0];
+        return @read8(idx);
+    } else {
+        return 0;
+    }
+}
+
+fn consume(num) [chr] {
+    loop {
+        if(num) {
+            chr = peek(0);
+
+            printer.print_string("Consumed '");
+            printer.putchar(chr);
+            printer.print_string("'\n");
+
+            current_index[0] += 1;
+
+            if(chr == '\n') {
+                current_line[0] += 1;
+                current_column[0] = 1;
+            } else {
+                current_column[0] += 1;
+            }
+            num -= 1;
+            continue;
+        } else {
+            return chr;
+        }
+    }
+}
+
+fn skip_whitespace() {
+    loop {
+        switch(peek(0)) {
+            return;
+        case '\t':
+        case '\n':
+        case ' ':
+            consume();
+            continue;
+        }
+    }
+}

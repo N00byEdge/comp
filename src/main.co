@@ -1,0 +1,57 @@
+// Low level code, establish what's needed for @todo() and @assert()
+import "src/printer.co" printer;
+import "src/syscalls.co" syscalls;
+
+fn assert_fail(statement, file, line) {
+    printer.print_string("Assertion failed: ");
+    if(statement) {
+        printer.print_string(statement);
+    } else {
+        printer.print_string("<unknown>");
+    }
+    printer.print_string(", at ");
+    if(file) {
+        printer.print_string(file);
+    } else {
+        printer.print_string("<unknown file>");
+    }
+    printer.print_string(": ");
+    printer.print_hex(line);
+
+    printer.putchar('\n');
+    printer.exit(1);
+    unreachable;
+}
+
+// Everything else
+import "src/compiler.co" compiler;
+import "src/strings.co" strings;
+
+fn main(argc, argv) [tmp] {
+    if(argc < 3) {
+        printer.print_string("Usage: ");
+        if(argc) {
+            tmp = argv[0];
+            printer.print_string(tmp);
+        } else {
+            printer.print_string("comp");
+        }
+        printer.print_string(" <main file> <base addr>\n");
+        printer.exit(1);
+        unreachable;
+    } else {
+        // Parse the binary base address
+        tmp = argv[2 * 8];
+        tmp = strings.parse_detect(tmp, 16);
+        compiler.init(tmp);
+
+        // Get the root source file
+        tmp = argv[1 * 8];
+        compiler.set_source_file(tmp);
+        compiler.parse_top_level();
+
+        @todo("Write output file");
+        printer.exit(0);
+        unreachable;
+    }
+}

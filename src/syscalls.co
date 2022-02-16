@@ -1,0 +1,145 @@
+enum {
+    SYS_READ = 0,
+    SYS_WRITE = 1,
+    SYS_OPEN = 2,
+    SYS_CLOSE = 3,
+
+    SYS_LSEEK = 8,
+    SYS_MMAP = 9,
+    SYS_MUNMAP = 11,
+
+    SYS_CLONE = 56,
+    SYS_FORK = 57,
+    SYS_EXIT = 60,
+};
+
+enum {
+    stdin = 0,
+    stdout = 1,
+    stderr = 2,
+};
+
+fn read(fd, buf, num) {
+    return @syscall(SYS_READ, fd, buf, num);
+}
+
+fn write(fd, buf, num) {
+    return @syscall(SYS_WRITE, fd, buf, num);
+}
+
+enum {
+    O_RDONLY  = 0x00000,
+    O_WRONLY  = 0x00001,
+    O_RDWR    = 0x00002,
+    O_CREAT   = 0x00040,
+    O_APPEND  = 0x00400,
+    O_CLOEXEC = 0x80000,
+    //O_TMPFILE = 
+};
+
+fn open(filename, flags) {
+    return @syscall(SYS_OPEN, filename, flags);
+}
+
+fn close(fd) {
+    return @syscall(SYS_CLOSE, fd);
+}
+
+enum {
+    SEEK_SET = 0,
+    SEEK_CUR = 1,
+    SEEK_END = 2,
+};
+
+fn lseek(fd, offset, whence) {
+    return @syscall(SYS_LSEEK, fd, offset, whence);
+}
+
+enum {
+    PROT_NONE  = 0x00,
+    PROT_READ  = 0x01,
+    PROT_WRITE = 0x02,
+    PROT_EXEC  = 0x04,
+    PROT_RW = PROT_READ | PROT_WRITE,
+};
+
+enum {
+    MAP_SHARED    = 0x0001,
+    MAP_FIXED     = 0x0010,
+    MAP_ANONYMOUS = 0x0020,
+    MAP_ANON = MAP_ANONYMOUS,
+    MAP_POPULATE  = 0x8000,
+};
+
+fn mmap(addr, size, prot, flags, fd, offset) {
+    return @syscall(SYS_MMAP, addr, size, prot, flags, fd, offset);
+}
+
+fn munmap(addr, size) {
+    return @syscall(SYS_MUNMAP, addr, size);
+}
+
+fn clone(fn, stack, flags, arg, parent_tid, tls, child_tid) {
+    return @syscall(SYS_CLONE, fn, stack, flags, arg, parent_tid, tls, child_tid);
+}
+
+fn fork() {
+    return @syscall(SYS_FORK);
+}
+
+fn exit(exit_code) {
+    @syscall(SYS_EXIT, exit_code);
+    unreachable;
+}
+
+// Wrapper around write() to call it over and over until the entire buffer is written
+fn write_all(fd, buf, num) [num_written] {
+    loop {
+        if(num == 0) {
+            return 0;
+        } else {
+            num_written = @syscall(SYS_WRITE, fd, buf, num);
+            if(num_written > num) {
+                return 1;
+            } else {
+                num -= num_written;
+                buf += num_written;
+                continue;
+            }
+        }
+    }
+}
+
+// Wrapper around read() to call it over and over until the entire buffer is read
+fn read_all(fd, buf, num) [num_read] {
+    loop {
+        if(num == 0) {
+            return 0;
+        } else {
+            num_read = @syscall(SYS_READ, fd, buf, num);
+            if(num_read > num) {
+                return 1;
+            } else {
+                num -= num_read;
+                buf += num_read;
+                continue;
+            }
+        }
+    }
+}
+
+// Wrapper around mmap() to allocate memory
+fn anon_mmap(size) {
+    // Page align size up
+    size += 0xFFF;
+    size &= ~0xFFF;
+    return @syscall(SYS_MMAP, 0, size, PROT_RW, MAP_ANONYMOUS, 0, 0);
+}
+
+// Wrapper around mmap() to map a file
+fn mmap_file(fd, size) {
+    // Page align size up
+    size += 0xFFF;
+    size &= ~0xFFF;
+    return @syscall(SYS_MMAP, 0, size, PROT_READ, MAP_SHARED, fd, 0);
+}

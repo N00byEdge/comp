@@ -1,0 +1,497 @@
+import "src/identifiers.co" identifiers;
+import "src/source.co" source;
+import "src/printer.co" printer;
+
+zeroes token_type[8];
+zeroes token_value[8];
+zeroes buffer[0x1000]; // Buffer for string literals, identifers etc
+zeroes token_line[8];
+
+enum {
+    none,
+
+    end_of_file,
+
+    // {}
+    open_curly_brace,
+    closing_curly_brace,
+
+    // ()
+    open_paren,
+    closing_paren,
+
+    // []
+    open_square_bracket,
+    closing_square_bracket,
+
+    //less_than, // <
+    //less_than_equal, // <=
+
+    //greater_than, // >
+    //greater_than_equal, // >=
+
+    assignment, // =
+    equals, // ==
+    not_equals, // !=
+
+    comma, // ,
+    colon, // :
+    semicolon, // ;
+
+    //question_mark, // ?
+
+    //bitnot, // ~
+
+    dot, // .
+
+    dot_dot_dot, // ...
+
+    bitor, // |
+    bitor_inplace, // |=
+
+    bitxor, // ^
+    bitxor_inplace, // ^=
+
+    bitand, // &
+    bitand_inplace, // &=
+
+    division, // /
+    division_inplace, // /=
+
+    modulus, // %
+    modulus_inplace, // %=
+
+    multiplication, // *
+    multiplication_inplace, // *=
+
+    addition, // +
+    addition_inplace, // +=
+
+    subtraction, // -
+    subtraction_inplace, // -=
+
+    // like `420` or `0x69`, value is the value of the literal
+    int_literal,
+
+    // Like `"Hello, \x00 is a valid byte"`
+    // Value is the length of the string
+    string_literal,
+
+    // like `my_variable`, value is pointer to node
+    identifier,
+
+    // All the keywords in the language
+    keyword_break,
+    keyword_case,
+    keyword_comptime,
+    keyword_continue,
+    keyword_endcase,
+    keyword_fn,
+    keyword_if,
+    keyword_import,
+    keyword_loop,
+    keyword_undefined,
+    keyword_unreachable,
+    keyword_zeroes,
+};
+
+fn is_first_ident_chr(idx) {
+    switch(source.peek(idx)) {
+        return 0;
+
+    case 'a'...'z':
+    case 'A'...'Z':
+    case '@':
+    case '_':
+        return 1;
+    }
+    unreachable;
+}
+
+fn is_ident_chr(idx) {
+    switch(source.peek(idx)) {
+        return 0;
+        
+    case 'a'...'z':
+    case 'A'...'Z':
+    case '0'...'9':
+    case '_':
+        return 1;
+    }
+    unreachable;
+}
+
+zeroes current_file_root[8];
+
+fn parse_identifier() [node, ptr] {
+    @assert(is_first_ident_chr(0));
+
+    @write64(token_type, identifier);
+    ptr = buffer;
+    node = current_file_root[0];
+
+    loop {
+        if(is_ident_chr(0)) {
+            ptr[0] = source.consume(1);
+            node = identifiers.lookup(ptr, node);
+            ptr += 1;
+            continue;
+        } else {
+            @write8(ptr, 0);
+            @write64(token_value, node);
+            return;
+        }
+    }
+}
+
+fn attempt_keyword(keyword_text, keyword) [idx, chr] {
+    idx = 0;
+    loop {
+        chr = @read8(keyword_text);
+        if(chr) {
+            if(source.peek(idx) == chr) {
+                keyword_text += 1;
+                idx += 1;
+                continue;
+            } else {
+                parse_identifier();
+                return;
+            }
+        } else {
+            if(is_ident_chr(idx)) {
+                parse_identifier();
+                return;
+            } else {
+                source.consume(idx);
+                @write64(token_type, keyword);
+                return;
+            }
+        }
+    }
+}
+
+fn read_int_literal_token() {
+    token_type[0] = int_literal;
+    @todo("read_int_literal_token");
+}
+
+fn read_string_literal_token() [len] {
+    @write64(token_type, string_literal);
+    len = 0;
+
+    loop {
+        switch(source.peek(0)) {
+            buffer[len] = source.consume(1);
+            len += 1;
+            continue;
+        case '"':
+            source.consume(1);
+            buffer[len] = 0;
+            @write64(token_value, len);
+            return;
+        case '\\':
+            @todo("read_string_literal_token escape");
+        }
+    }
+}
+
+fn fill_token() [chr] {
+    if(token_type[0] == none) {
+        loop {
+            token_line[0] = source.current_line[0];
+
+            switch(source.peek(0)) {
+                printer.print_string("Unexpected character in fill_token: '");
+                chr = source.peek(0);
+                printer.putchar(chr);
+                printer.print_string("' (0x");
+                printer.print_hex(chr);
+                printer.print_string(")\n");
+                printer.exit(1);
+
+            // EOF
+            case 0:
+                token_type[0] = end_of_file;
+                return;
+
+            // No one cares about whitespace
+            case '\n':
+            case '\t':
+            case ' ':
+                source.consume(1);
+                continue;
+
+            case '0'...'9':
+                read_int_literal_token();
+                return;
+
+            case '"': source.consume(1);
+                read_string_literal_token();
+                return;
+
+            case '=':
+                switch(source.peek(1)) {
+                    source.consume(1);
+                    token_type[0] = assignment;
+                    return;
+                case '=':
+                    source.consume(2);
+                    token_type[0] = equals;
+                    return;
+                }
+
+            case '!':
+                switch(source.peek(1)) {
+                    @todo("fill_token (!)");
+                case '=':
+                    source.consume(2);
+                    token_type[0] = not_equals;
+                    return;
+                }
+
+            case ',':
+                source.consume(1);
+                token_type[0] = comma;
+                return;
+
+            case ':':
+                source.consume(1);
+                token_type[0] = colon;
+                return;
+
+            case ';':
+                source.consume(1);
+                token_type[0] = semicolon;
+                return;
+
+            case '.':
+                if((source.peek(1) == '.') & (source.peek(2) == '.')) {
+                    source.consume(3);
+                    token_type[0] = dot_dot_dot;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = dot;
+                    return;
+                }
+
+            case '{':
+                source.consume(1);
+                token_type[0] = open_curly_brace;
+                return;
+
+            case '}':
+                source.consume(1);
+                token_type[0] = closing_curly_brace;
+                return;
+
+            case '(':
+                source.consume(1);
+                token_type[0] = open_paren;
+                return;
+
+            case ')':
+                source.consume(1);
+                token_type[0] = closing_paren;
+                return;
+
+            case '[':
+                source.consume(1);
+                token_type[0] = open_square_bracket;
+                return;
+
+            case ']':
+                source.consume(1);
+                token_type[0] = closing_square_bracket;
+                return;
+
+            case '|':
+                if(source.peek(1) == '=') {
+                    source.consume(2);
+                    token_type[0] = bitor_inplace;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = bitor;
+                    return;
+                }
+
+            case '&':
+                if(source.peek(1) == '=') {
+                    source.consume(2);
+                    token_type[0] = bitand_inplace;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = bitand;
+                    return;
+                }
+
+            case '^':
+                if(source.peek(1) == '=') {
+                    source.consume(2);
+                    token_type[0] = bitxor_inplace;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = bitxor;
+                    return;
+                }
+
+            case '%':
+                if(source.peek(1) == '=') {
+                    source.consume(2);
+                    token_type[0] = modulus_inplace;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = modulus;
+                    return;
+                }
+
+            case '*':
+                if(source.peek(1) == '=') {
+                    source.consume(2);
+                    token_type[0] = multiplication_inplace;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = multiplication;
+                    return;
+                }
+
+            case '+':
+                if(source.peek(1) == '=') {
+                    source.consume(2);
+                    token_type[0] = addition_inplace;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = addition;
+                    return;
+                }
+
+            case '-':
+                if(source.peek(1) == '=') {
+                    source.consume(2);
+                    token_type[0] = subtraction_inplace;
+                    return;
+                } else {
+                    source.consume(1);
+                    token_type[0] = subtraction;
+                    return;
+                }
+
+            case '/':
+                switch(source.peek(1)) {
+                    source.consume(1);
+                	token_type[0] = division;
+                	return;
+
+                case '=': source.consume(2);
+                    source.consume(2);
+                	token_type[0] = division_inplace;
+                	return;
+
+                case '/':
+                	source.consume(2);
+                    // Line comment like this one
+                    loop {
+                        if(source.consume(1) != '\n') {
+                            continue;
+                        } else {
+                            break;
+                        }
+                    }
+                    continue;
+                }
+
+            case 'a'...'z':
+            case 'A'...'Z':
+            case '@':
+            case '_':
+                return parse_identifier();
+
+            case 'b':
+                return attempt_keyword("break", keyword_break);
+
+            case 'c':
+                switch(source.peek(1)) {
+                    return parse_identifier();
+                case 'a':
+                    return attempt_keyword("case", keyword_case);
+                case 'o':
+                    switch(source.peek(2)) {
+                        return parse_identifier();
+                    case 'm':
+                        return attempt_keyword("comptime", keyword_comptime);
+                    case 'n':
+                        return attempt_keyword("continue", keyword_continue);
+                    }
+                }
+
+            case 'e':
+                return attempt_keyword("endcase", keyword_endcase);
+
+            case 'f':
+                return attempt_keyword("fn", keyword_fn);
+
+            case 'i':
+                switch(source.peek(1)) {
+                    return parse_identifier();
+                case 'f':
+                    return attempt_keyword("if", keyword_if);
+                case 'm':
+                    return attempt_keyword("import", keyword_import);    
+                }
+
+            case 'l':
+                return attempt_keyword("loop", keyword_loop);
+
+            case 'u':
+                if(source.peek(1) == 'n') {
+                    switch(source.peek(2)) {
+                        return parse_identifier();
+                    case 'd':
+                        return attempt_keyword("undefined", keyword_undefined);
+                    case 'r':
+                        return attempt_keyword("unreachable", keyword_unreachable);
+                    }
+                } else {
+                    return parse_identifier();
+                }
+
+            case 'z':
+                return attempt_keyword("zeroes", keyword_zeroes);
+            }
+        }
+    } else { }
+}
+
+fn peek_type() {
+    fill_token();
+    return token_type[0];
+}
+
+fn expect_token(expected_type, fail_message) {
+    fill_token();
+    if(expected_type == token_type[0]) {
+        return token_value[0];
+    } else {
+        printer.print_string("Unexpected token type: ");
+        printer.print_string(fail_message);
+        printer.putchar('\n');
+        printer.exit(1);
+        unreachable;
+    }
+}
+
+fn peek_value() {
+    fill_token();
+    return token_value[0];
+}
+
+fn discard() [] {
+    fill_token();
+    token_type[0] = none;
+}

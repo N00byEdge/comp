@@ -1,0 +1,98 @@
+import "src/syscalls.co" syscalls;
+
+comptime buffer_size = 0x1000;
+
+zeroes buffer[buffer_size];
+zeroes buf_size[8];
+
+fn flush() [size] {
+    if(buf_size[0]) {
+        size = buf_size[0];
+        if(syscalls.write_all(syscalls.stderr, buffer, size)) {
+            syscalls.exit(1);
+        } else {
+            buf_size[0] = 0;
+            return;
+        }
+    } else {}
+}
+
+fn putchar(ch) [ptr] {
+    if(buf_size[0] == buffer_size) {
+        flush();
+    } else {}
+
+    ptr = buffer + buf_size[0];
+    buf_size[0] += 1;
+    @write8(ptr, ch);
+
+    // Uncomment this to flush on every '\n'
+    // if(ch == '\n') {
+    //     flush();
+    // } else { }
+}
+
+fn print_string(str) [ch] {
+    loop {
+        ch = @read8(str);
+        if(ch) {
+            putchar(ch);
+            str += 1;
+            continue;
+        } else {
+            return;
+        }
+    }
+}
+
+comptime dec_offset = '0' - 0x00;
+comptime hex_offset = 'A' - 0x0A;
+
+fn print_hex(value) [tmp] {
+    tmp = value & 0xF;
+
+    if(tmp > 9) {
+        tmp += hex_offset;
+    } else {
+        tmp += dec_offset;
+    }
+
+    value >>= 4;
+
+    if(value) {
+        print_hex(value);
+    } else {}
+
+    putchar(tmp);
+}
+
+fn print_decimal(value) [tmp] {
+    tmp = (value % 10) + dec_offset;
+
+    value /= 10;
+
+    if(value) {
+        print_decimal(value);
+    } else {}
+
+    putchar(tmp);
+}
+
+fn log_hex(str, val) {
+    print_string(str);
+    print_string(": 0x");
+    print_hex(val);
+    putchar('\n');
+    flush();
+}
+
+// Print that we're exiting,
+// flush the buffer and then exit
+fn exit(exit_code) {
+    print_string("Exiting with error code ");
+    print_decimal(exit_code);
+    print_string("...\n");
+    flush();
+    syscalls.exit(exit_code);
+    unreachable;
+}

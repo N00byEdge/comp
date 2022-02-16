@@ -1,0 +1,40 @@
+enum {
+	// Not a valid identifier
+	none,
+
+	// Non-buffer local variable, value is rbp offset
+	local_variable,
+
+	// Buffer local variable, value is rbp offset and attribute is size
+	local_buffer,
+
+	// Non-buffer global variable, value is address
+	global_variable,
+
+	// Buffer global variable, value is address and attribute is size
+	global_buffer,
+
+	// This filename has finished parsing, attribute is variable scope node id
+	fully_parsed_filename,
+
+	// Parsing of the file is incomplete, importing such a file implies a circular import.
+	partially_parsed_filename,
+
+	// A variable scope that you can access like `scope.thing`. Attribute is the scope id.
+	variable_scope,
+
+	// A compile-time known integral value, value is value
+	comptime_int,
+
+	// Address of a function, value is address of the function entry
+	function_addr,
+
+	// A builtin function that can be called from user code during code generation
+	builtin_function_codegen,
+
+	// A builtin function that can be called from user code during compile time evaluation
+	builtin_function_comptime,
+
+	// A builtin function that can be called any context
+	builtin_function_any,
+};

@@ -1,0 +1,63 @@
+// Doesn't affect bss, otherwise we can't compile ourselves :^)
+comptime max_section_bytes = 0x100000;
+
+enum {
+    text,
+    data,
+    rodata,
+    bss,
+
+    end,
+};
+
+zeroes section_base_addrs[4 * 8];
+zeroes current_section_bytes[4 * 8];
+zeroes current_section_buf[3 * 8];
+
+fn init(binary_base_addr) {
+    section_base_addrs[0x00] = binary_base_addr + max_section_bytes * 0;
+    section_base_addrs[0x08] = binary_base_addr + max_section_bytes * 1;
+    section_base_addrs[0x10] = binary_base_addr + max_section_bytes * 2;
+    section_base_addrs[0x18] = binary_base_addr + max_section_bytes * 3;
+
+    //current_section_buf[0]
+}
+
+fn section_offset(section) {
+    return current_section_bytes[section * 8];
+}
+
+fn section_addr(section) {
+    return section_base_addrs[section * 8] + current_section_bytes[section * 8];
+}
+
+fn write_generic(value, section, num_bytes) {
+    if(section != bss) {
+        current_section_buf[section_offset(section)] = value;
+    } else {}
+    current_section_bytes += num_bytes;
+}
+
+fn code8(value) {
+    return write_generic(value, text, 1);
+}
+
+fn code16(value) {
+    return write_generic(value, text, 2);
+}
+
+fn code32(value) {
+    return write_generic(value, text, 4);
+}
+
+fn code64(value) {
+    return write_generic(value, text, 8);
+}
+
+fn code_offset() {
+    return section_offset(text);
+}
+
+fn code_addr() {
+    return section_addr(text);
+}

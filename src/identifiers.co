@@ -1,0 +1,94 @@
+// Layout of the trie nodes
+
+// Node next index size
+comptime trie_node_next_size = 4;
+
+// Node value offset
+comptime trie_node_value = 0x80 * trie_node_next_size;
+
+// Size of an entire trie node, including next pointers, attribute and value
+comptime trie_node_size = trie_node_value + (4 + 4 + 8);
+
+zeroes addr_value_trie_bytes[0x10000 * trie_node_size];
+zeroes last_addr_value_trie[8];
+
+fn alloc() {
+    last_addr_value_trie[0] += 1;
+    return last_addr_value_trie[0];
+}
+
+fn node_addr(node_idx) {
+    return (trie_node_size * node_idx) + addr_value_trie_bytes;
+}
+
+fn trie_node_next(node_ptr, idx) [tmp] {
+    tmp = node_ptr + (idx * trie_node_next_size);
+    @read32(tmp);
+}
+
+fn trie_node_set_next(node_ptr, idx, next) [tmp] {
+    tmp = node_ptr + (idx * trie_node_next_size);
+    @write32(tmp, idx);
+}
+
+fn lookup(name, idx) [addr, chr] {
+    loop {
+        chr = @read8(name);
+        if(chr) {
+            addr = node_addr(idx);
+            idx = trie_node_next(addr, chr);
+            name += 1;
+            if(idx) {
+                continue;
+            } else {
+                idx = alloc();
+                trie_node_set_next(addr, chr, idx);
+                continue;
+            }
+        } else {
+            return idx;
+        }
+    }
+}
+
+comptime type_offset = trie_node_value;
+
+fn node_get_type(node) {
+    node = node_addr(node);
+    node += type_offset;
+    return @read32(node);
+}
+
+fn node_set_type(node, value) {
+    node = node_addr(node);
+    node += type_offset;
+    return @write32(node, value);
+}
+
+comptime attribute_offset = type_offset + 4;
+
+fn node_get_attribute(node) {
+    node = node_addr(node);
+    node += attribute_offset;
+    return @read32(node);
+}
+
+fn node_set_attribute(node, value) {
+    node = node_addr(node);
+    node += attribute_offset;
+    return @write32(node, value);
+}
+
+comptime value_offset = attribute_offset + 4;
+
+fn node_get_value(node) {
+    node = node_addr(node);
+    node += value_offset;
+    return @read64(node);
+}
+
+fn node_set_value(node, value) {
+    node = node_addr(node);
+    node += value_offset;
+    return @write64(node, value);
+}
