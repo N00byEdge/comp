@@ -12,53 +12,53 @@ var my_global_var;
 import "src/my_module.co" my_module;
 
 fn my_fun(arg) [my_local_var] {
-	// Treats `my_global_var` as a pointer and dereferences it
-	my_local_var = my_global_var[arg];
+    // Treats `my_global_var` as a pointer and dereferences it
+    my_local_var = my_global_var[arg];
 
-	if(my_local_var) {
-		// Asserts `arg`, on assertion failure, the `panic` function
-		// in the root file is called:
-		// if(!arg) @root.panic("Assertion failure: ", 0, @filename(), @line())
-		@assert(arg);
+    if(my_local_var) {
+        // Asserts `arg`, on assertion failure, the `panic` function
+        // in the root file is called:
+        // if(!arg) @root.panic("Assertion failure: ", 0, @filename(), @line())
+        @assert(arg);
 
-		// if(!arg) @root.panic("Assertion failure: ", "has argument", @filename(), @line())
-		@assert(arg, "has argument");
-	} else {
-		loop {
-			switch(my_global_var) {
-				// Implicit default case right after `switch() {`
-				// @root.panic("PANIC: ", "What is this?", @filename(), @line())
-				@panic("What is this?");
+        // if(!arg) @root.panic("Assertion failure: ", "has argument", @filename(), @line())
+        @assert(arg, "has argument");
+    } else {
+        loop {
+            switch(my_global_var) {
+                // Implicit default case right after `switch() {`
+                // @root.panic("PANIC: ", "What is this?", @filename(), @line())
+                @panic("What is this?");
 
-				// Case ranges work like expected...
-			case 'a'...'z':
-				@todo("letter"); // @root.panic("TODO: ", "letter", @filename(), @line())
+                // Case ranges work like expected...
+            case 'a'...'z':
+                @todo("letter"); // @root.panic("TODO: ", "letter", @filename(), @line())
 
-				// Except that you can override cases in ranges listed before
-			case 'a':
-			case 'e':
-			case 'i':
-			case 'o':
-			case 'u':
-				print("Vowel!");
-				// `endcase;` to end a switch case
-				endcase;
+                // Except that you can override cases in ranges listed before
+            case 'a':
+            case 'e':
+            case 'i':
+            case 'o':
+            case 'u':
+                print("Vowel!");
+                // `endcase;` to end a switch case
+                endcase;
 
-			case 'q':
-				// Now you can break your loops from within a switch!
-				break;
+            case 'q':
+                // Now you can break your loops from within a switch!
+                break;
 
-			case '0':
-				// Continue works as expected, just continues the loop outside
-				continue;
+            case '0':
+                // Continue works as expected, just continues the loop outside
+                continue;
 
-			case '.':
-				// Fall through out of switch for everything else
-			}
-		}
+            case '.':
+                // Fall through out of switch for everything else
+            }
+        }
 
-		return my_module.hello();
-	}
+        return my_module.hello();
+    }
 }
 ```
 
@@ -157,6 +157,7 @@ The expressions are designed in such a way where there are no ambigous expressio
     * `|=` Bitwise or
 
 ## Types of statements
+All statements are followed either by a block or a semicolon.
 * `break`
   Jumps past the end of the current `loop` block
 * `continue`
@@ -164,13 +165,16 @@ The expressions are designed in such a way where there are no ambigous expressio
 * `endcase`
   Jumps past the end of the current `switch` block
 * `if`
-  Runs either the first or the second branch based on the condition
+  Runs either the first or the second branch based on the condition.
+  Can optionally be followed by an `else` keyword and another block.
 * `loop`
   Reruns the code within the block until a `break` or `return` statement. You can go to the top of the loop using `continue`.
 * `return`
   Optionally return a value to the calling function.
 * `switch`
-  Jumps to the case matching the value switched on, default case is the first piece of code within the following block, no label needed. If control flow reaches the end of the switch block it falls through.
+  Jumps to the case matching the value switched on.
+  Default case is the first piece of code within the following block, no label needed.
+  If control flow reaches the end of the switch block it falls through.
 * `unreachable`
   Assumes the statement is in dead code, a hint for compiler optimization
 * Expression statements
