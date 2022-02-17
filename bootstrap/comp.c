@@ -1043,10 +1043,14 @@ void parse_eval_with_precedence(int precedence, struct trie_node_value *var_name
                     write8(0x50, SECTION_TEXT);
                     parse_eval_with_precedence(3, 0);
 
-                    // pop rdx
-                    write8(0x5A, SECTION_TEXT);
+                    // pop rcx
+                    write8(0x59, SECTION_TEXT);
 
-                    // imul rax, rdx
+                    // xchg rax, rcx
+                    write8(0x48, SECTION_TEXT);
+                    write8(0x91, SECTION_TEXT);
+
+                    // div rcx (rax /= rcx, rdx = rax % rcx)
                     write8(0x48, SECTION_TEXT);
                     write8(0x0F, SECTION_TEXT);
                     write8(0xAF, SECTION_TEXT);
