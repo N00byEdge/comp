@@ -133,6 +133,24 @@ fn parse_comptime_value(mode) [lhs, rhs, extra] {
     }
 }
 
+fn parse_comptime_decl() [value_node, value] {
+    tokenizer.discard();
+
+    value_node = tokenizer.expect_token(tokenizer.identifier, "Expected identifier after `comptime`");
+    tokenizer.discard();
+    @assert(idents.node_get_type(value_node) == itypes.none);
+
+    tokenizer.expect_token(tokenizer.assignment, "Expected `=` after identifier");
+    tokenizer.discard();
+
+    value = parse_comptime_value(any_unambigous_expr);
+    idents.node_set_value(value_node, value);
+    idents.node_set_type(value_node, itypes.comptime_int);
+
+    tokenizer.expect_token(tokenizer.semicolon, "Expected `;` after comptime decl");
+    tokenizer.discard();
+}
+
 fn parse_block() {
 
 }
@@ -264,7 +282,8 @@ fn parse_top_level() {
             continue;
 
         case tokenizer.keyword_comptime:
-            @todo("parse_top_level comptime");
+            parse_comptime_decl();
+            continue;
 
         case tokenizer.keyword_import:
             parse_import();
