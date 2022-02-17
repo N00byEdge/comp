@@ -293,6 +293,7 @@ fn parse_top_level() {
 }
 
 fn init(base_addr) {
+    idents.init();
     writer.init(base_addr);
     import_file_root[0] = idents.alloc();
     parse_top_level_ptr[0] = parse_top_level;

@@ -9,8 +9,15 @@ comptime trie_node_value = 0x80 * trie_node_next_size;
 // Size of an entire trie node, including next pointers, attribute and value
 comptime trie_node_size = trie_node_value + (4 + 4 + 8);
 
-zeroes addr_value_trie_bytes[0x10000 * trie_node_size];
+zeroes addr_value_trie_bytes[8];
 zeroes last_addr_value_trie[8];
+
+import "src/syscalls.co" syscalls;
+
+fn init() [num_bytes] {
+    num_bytes = 0x10000 * trie_node_size;
+    addr_value_trie_bytes[0] = syscalls.anon_mmap(num_bytes);
+}
 
 fn alloc() {
     last_addr_value_trie[0] += 1;
@@ -18,7 +25,7 @@ fn alloc() {
 }
 
 fn node_addr(node_idx) {
-    return (trie_node_size * node_idx) + addr_value_trie_bytes;
+    return (trie_node_size * node_idx) + addr_value_trie_bytes[0];
 }
 
 fn trie_node_next(node_ptr, idx) [tmp] {
