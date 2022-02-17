@@ -507,7 +507,7 @@ fn peek_value() {
     return token_value[0];
 }
 
-fn discard() [] {
+fn discard() {
     fill_token();
     token_type[0] = none;
 }
