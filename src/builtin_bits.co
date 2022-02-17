@@ -6,24 +6,22 @@ enum {
 	eval_codegen,
 };
 
-	// A builtin function that can be called from user code during code generation
-	builtin_function_codegen,
-
-	// A builtin function that can be called from user code during compile time evaluation
-	builtin_function_comptime,
-
-	// A builtin function that can be called any context
-	builtin_function_any,
-
 fn eval_builtin_comptime(function_node) {
 	switch(idents.node_get_type(function_node)) {
-		@todo();
-	case ident_types.builtin_function:
+		@panic();
+
+	case ident_types.builtin_function_comptime:
+	case ident_types.builtin_function_any:
 		return @call(idents.node_get_value(function_node), eval_comptime);
 	}
 }
 
 fn exec_builtin_codegen(function_node) {
-	@assert(idents.node_get_type(function_node) == ident_types.builtin_function);
-	@call(idents.node_get_value(function_node), eval_codegen);
+	switch(idents.node_get_type(function_node)) {
+		@panic();
+
+	case ident_types.builtin_function_codegen:
+	case ident_types.builtin_function_any:
+		return @call(idents.node_get_value(function_node), eval_codegen);
+	}
 }
