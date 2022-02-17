@@ -137,7 +137,7 @@ fn parse_block() {
 
 }
 
-fn parse_enum() [next_value, node] {
+fn parse_enum_decl() [next_value, node] {
     tokenizer.discard();
 
     tokenizer.expect_token(tokenizer.open_curly_brace, "Expected `{` after `enum`");
@@ -260,7 +260,7 @@ fn parse_top_level() {
             @todo("parse_top_level fn");
 
         case tokenizer.keyword_enum:
-            parse_enum();
+            parse_enum_decl();
             continue;
 
         case tokenizer.keyword_comptime:
