@@ -64,8 +64,8 @@ fn parse_import() [file_root, ident_node] {
     tokenizer.discard();
 
     tokenizer.expect_token(tokenizer.string_literal, "Expected a string literal after `import`.");
-    file_root = parse_file_if_needed(tokenizer.buffer);
     tokenizer.discard();
+    file_root = parse_file_if_needed(tokenizer.buffer);
 
     tokenizer.expect_token(tokenizer.identifier, "Expected an identifier after filename.");
     ident_node = tokenizer.peek_value();
