@@ -14,10 +14,6 @@ fn parse_block() {
 }
 
 fn set_source_file(file_path) [fd] {
-    printer.print_string("File requested for set_source_file: '");
-    printer.print_string(file_path);
-    printer.print_string("'\n");
-
     fd = syscalls.open(file_path, syscalls.O_RDONLY);
     source.switch_file(fd);
 }
