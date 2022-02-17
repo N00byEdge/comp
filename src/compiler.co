@@ -137,6 +137,42 @@ fn parse_block() {
 
 }
 
+fn parse_enum() [next_value, node] {
+    tokenizer.discard();
+
+    tokenizer.expect_token(tokenizer.open_curly_brace, "Expected `{` after `enum`");
+    tokenizer.discard();
+
+    next_value = 0;
+
+    loop {
+        if(tokenizer.peek_type() == tokenizer.closing_curly_brace) {
+            tokenizer.discard();
+            tokenizer.expect_token(tokenizer.semicolon, "Expected `;` after enum decl");
+            tokenizer.discard();
+            return;
+        } else {
+            node = tokenizer.expect_token(tokenizer.identifier, "Expected identifier or `}`");
+            tokenizer.discard();
+
+            @assert(idents.node_get_type(node) == itypes.none);
+
+            if(tokenizer.peek_type() != tokenizer.comma) {
+                tokenizer.expect_token(tokenizer.assignment, "Expected `=` or `,` after enum member identifier");
+                tokenizer.discard();
+                next_value = parse_comptime_value(any_unambigous_expr);
+            } else {}
+            idents.node_set_type(itypes.comptime_int);
+            idents.node_set_value(next_value);
+            next_value += 1;
+
+            tokenizer.expect_token(tokenizer.comma, "Expected `,` after enum member value");
+            tokenizer.discard();
+            continue;
+        }
+    }
+}
+
 fn set_source_file(file_path) [fd] {
     fd = syscalls.open(file_path, syscalls.O_RDONLY);
     source.switch_file(fd);
@@ -224,7 +260,8 @@ fn parse_top_level() {
             @todo("parse_top_level fn");
 
         case tokenizer.keyword_enum:
-            @todo("parse_top_level enum");
+            parse_enum();
+            continue;
 
         case tokenizer.keyword_comptime:
             @todo("parse_top_level comptime");
