@@ -9,6 +9,130 @@ import "src/identifier_types.co" itypes;
 zeroes import_file_root[8];
 zeroes parse_top_level_ptr[8];
 
+comptime primary_expr_only = 0;
+comptime any_unambigous_expr = 1;
+
+fn parse_comptime_value(mode) [lhs, rhs, extra] {
+    switch(tokenizer.peek_type()) {
+        tokenizer.error("Expected primary expression");
+        endcase;
+
+    case tokenizer.bitnot:
+        tokenizer.discard();
+        lhs = ~parse_comptime_value(primary_expr_only);
+        endcase;
+
+    case tokenizer.subtraction:
+        tokenizer.discard();
+        lhs = -parse_comptime_value(primary_expr_only);
+        endcase;
+
+    case tokenizer.open_paren:
+        tokenizer.discard();
+        lhs = parse_comptime_value(any_unambigous_expr);
+        tokenizer.expect_token(tokenizer.closing_paren, "Expected `)` after expression");
+        tokenizer.discard();
+        endcase;
+
+    case tokenizer.int_literal:
+        lhs = tokenizer.peek_value();
+        tokenizer.discard();
+        endcase;
+
+    case tokenizer.identifier:
+        @todo("parse_comptime_value ident");
+    }
+
+    if(primary_expr_only) {
+        return lhs;
+    } else {
+        switch(tokenizer.peek_type()) {
+            @todo("parse_comptime_value default op");
+        case tokenizer.closing_paren:
+        case tokenizer.closing_curly_brace:
+        case tokenizer.closing_square_bracket:
+        case tokenizer.end_of_file:
+        case tokenizer.comma:
+        case tokenizer.semicolon:
+        case tokenizer.colon:
+        case tokenizer.dot_dot_dot:
+            return lhs;
+
+        case tokenizer.less_than:
+            tokenizer.discard();
+            return lhs < parse_comptime_value(primary_expr_only);
+
+        case tokenizer.less_than_equal:
+            tokenizer.discard();
+            return lhs <= parse_comptime_value(primary_expr_only);
+
+        case tokenizer.greater_than:
+            tokenizer.discard();
+            return lhs > parse_comptime_value(primary_expr_only);
+
+        case tokenizer.greater_than_equal:
+            tokenizer.discard();
+            return lhs >= parse_comptime_value(primary_expr_only);
+
+        case tokenizer.equals:
+            tokenizer.discard();
+            return lhs == parse_comptime_value(primary_expr_only);
+
+        case tokenizer.not_equals:
+            tokenizer.discard();
+            return lhs == parse_comptime_value(primary_expr_only);
+
+        case tokenizer.bitor:
+            tokenizer.discard();
+            return lhs | parse_comptime_value(primary_expr_only);
+
+        case tokenizer.bitxor:
+            tokenizer.discard();
+            return lhs ^ parse_comptime_value(primary_expr_only);
+
+        case tokenizer.bitand:
+            tokenizer.discard();
+            return lhs & parse_comptime_value(primary_expr_only);
+
+        case tokenizer.division:
+            tokenizer.discard();
+            return lhs / parse_comptime_value(primary_expr_only);
+
+        case tokenizer.modulus:
+            tokenizer.discard();
+            return lhs % parse_comptime_value(primary_expr_only);
+
+        case tokenizer.multiplication:
+            tokenizer.discard();
+            return lhs * parse_comptime_value(primary_expr_only);
+
+        case tokenizer.addition:
+            tokenizer.discard();
+            return lhs + parse_comptime_value(primary_expr_only);
+
+        case tokenizer.subtraction:
+            tokenizer.discard();
+            return lhs - parse_comptime_value(primary_expr_only);
+
+        case tokenizer.question_mark:
+            tokenizer.discard();
+            // Ternary operator
+            extra = lhs;
+
+            lhs = parse_comptime_value(any_unambigous_expr);
+            tokenizer.expect_token(tokenizer.colon, "Expected `:` after expression");
+            tokenizer.discard();
+            rhs = parse_comptime_value(any_unambigous_expr);
+
+            if(extra) {
+                return lhs;
+            } else {
+                return rhs;
+            }
+        }
+    }
+}
+
 fn parse_block() {
 
 }
