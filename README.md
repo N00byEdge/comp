@@ -105,9 +105,9 @@ How we can have nice things:
 * `panic(message)`:
   Equivalent to `@root.panic("PANIC: ", message, @filename(), @line());`
 * `assert(expr)`:
-  Equivalent to `@root.panic("Assetion failure: ", 0, @filename(), @line());`
+  Equivalent to `if(!expr) { @root.panic("Assetion failure: ", 0, @filename(), @line()); }`
 * `assert(expr, message)`:
-  Equivalent to `@root.panic("Assetion failure: ", message, @filename(), @line());`
+  Equivalent to `if(!expr) { @root.panic("Assetion failure: ", message, @filename(), @line()); }`
 
 ## Expressions
 The expressions are designed in such a way where there are no ambigous expressions, so no operator precedence or associativity is needed.
