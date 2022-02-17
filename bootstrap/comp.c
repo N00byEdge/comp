@@ -171,7 +171,7 @@ int is_ident_chr() {
     }
 }
 
-struct trie_node_value *read_node_name_in_root(int create, int current) {
+struct trie_node_value *read_node_name_in_root(int current) {
     char buf[2];
     buf[1] = 0;
 
@@ -184,7 +184,7 @@ struct trie_node_value *read_node_name_in_root(int create, int current) {
     while(1) {
         if(is_ident_chr()) {
             buf[0] = consume();
-            current = lookup_node(buf, create, current);
+            current = lookup_node(buf, current);
             if(current == 0) return 0;
         } else {
             return get_or_create_node_value("", current);
@@ -192,8 +192,8 @@ struct trie_node_value *read_node_name_in_root(int create, int current) {
     }
 }
 
-struct trie_node_value *read_node_name(int create) {
-    return read_node_name_in_root(create, current_file_root);
+struct trie_node_value *read_node_name() {
+    return read_node_name_in_root(current_file_root);
 }
 
 u64 read_int_literal_hex() {
@@ -280,7 +280,7 @@ void collapse_var_name_eval(struct trie_node_value **var_name_node) {
         assert(consume() == '.');
 
         // Just read the node and use that one instead
-        var_name_node[0] = read_node_name_in_root(1, var_name_node[0]->file_scope_trie);
+        var_name_node[0] = read_node_name_in_root(var_name_node[0]->file_scope_trie);
         assert(var_name_node[0]);
     }
 }
@@ -1667,7 +1667,7 @@ void recover_primary_expression(char const *recover_text) {
 
     while(*recover_text) {
         buf[0] = *recover_text++;
-        current = lookup_node(buf, 0, current);
+        current = lookup_node(buf, current);
     }
 
     while(1) {
@@ -1675,8 +1675,7 @@ void recover_primary_expression(char const *recover_text) {
         //   `is_ident_chr` without bothering with `is_starting_ident_chr`
         if(is_ident_chr()) {
             buf[0] = consume();
-            current = lookup_node(buf, 0, current);
-            if(current == 0) TODO
+            current = lookup_node(buf, current);
         } else {
             struct trie_node_value *lhs_node = get_or_create_node_value("", current);
             return parse_primary_expression_with_node(lhs_node);

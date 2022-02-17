@@ -64,21 +64,17 @@ int alloc_trie_node(void) {
     return ++last_node_alloced;
 }
 
-int lookup_node(char const *name, int create, int current_trie_node) {
+int lookup_node(char const *name, int current_trie_node) {
     if(!*name) {
         return current_trie_node;
     }
 
     struct trie_node *curr = &trie_node_storage[current_trie_node];
     if(!curr->next[(unsigned char)*name]) {
-        if(create) {
-            curr->next[(unsigned char)*name] = alloc_trie_node();
-        } else {
-            return 0;
-        }
+        curr->next[(unsigned char)*name] = alloc_trie_node();
     }
 
-    return lookup_node(name + 1, create, curr->next[(unsigned char)*name]);
+    return lookup_node(name + 1, curr->next[(unsigned char)*name]);
 }
 
 void add_shorthand(int scope, char shorthand, int target) {
@@ -86,5 +82,5 @@ void add_shorthand(int scope, char shorthand, int target) {
 }
 
 struct trie_node_value *get_or_create_node_value(char const *name, int root) {
-    return &trie_node_storage[lookup_node(name, 1, root)].value;
+    return &trie_node_storage[lookup_node(name, root)].value;
 }
