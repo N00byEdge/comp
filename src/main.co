@@ -16,7 +16,7 @@ fn assert_fail(statement, file, line) {
         printer.print_string("<unknown file>");
     }
     printer.print_string(": ");
-    printer.print_hex(line);
+    printer.print_decimal(line);
 
     printer.putchar('\n');
     printer.exit(1);
