@@ -73,47 +73,77 @@ There are a few limitations to simplify the implementation, namely:
 Builtins are available as `builtin.<builtin name>` and `@<builtin name>` from every file.
 
 Vital for the language:
-* `read{8,16,32,64}(ptr)`:
+* `read{8,16,32,64}(ptr)`
+
   Read from `ptr` with the specified bit size, returns a zero extended pointer length value for every read size.
-* `write{8,16,32,64}(ptr, value)`:
+
+* `write{8,16,32,64}(ptr, value)`
+
   Write `value` to the address specified in `ptr`. Does the write with the size specified.
-* `syscall(arg...)`:
+
+* `syscall(arg...)`
+
   Does whatever a syscall means for your target.
+
   Linux example: `retval = @syscall(SYS_READ, fd, buf, len);`
-* `call(ptr, arg...)`:
+
+* `call(ptr, arg...)`
+
   Calls the function pointer `ptr` with any arguments you supply
 
 Would be missed if we didn't have them:
-* `root`:
+* `root`
+
   A way to access the root source file (the one specified on the command line) in the project
-* `size_of(identifier)`:
+
+* `size_of(identifier)`
+
   Evaluates to the byte size of the object referenced by the identifier at compile time
-* `memcpy(dst, src, size)`:
+
+* `memcpy(dst, src, size)`
+
   Good ol' memcpy. Does what it says on the tin, **but returns an undefined value**.
 
 How we can have nice things:
 * `line()`:
+
   Evaluates to the current line number at the invocation site at compile time
+
 * `filename()`:
+
   Evaluates to the current source file path at the invocation site at compile time
+
 * `todo()`:
+
   Equivalent to `@root.panic("TODO: ", 0, @filename(), @line());`
+
 * `todo(message)`:
+
   Equivalent to `@root.panic("TODO: ", message, @filename(), @line());`
+
 * `panic()`:
+
   Equivalent to `@root.panic("PANIC: ", 0, @filename(), @line());`
+
 * `panic(message)`:
+
   Equivalent to `@root.panic("PANIC: ", message, @filename(), @line());`
+
 * `assert(expr)`:
+
   Equivalent to `if(!expr) { @root.panic("Assetion failure: ", 0, @filename(), @line()); }`
+
 * `assert(expr, message)`:
+
   Equivalent to `if(!expr) { @root.panic("Assetion failure: ", message, @filename(), @line()); }`
 
 ## Expressions
 The expressions are designed in such a way where there are no ambigous expressions, so no operator precedence or associativity is needed.
 * Complex expressions
   * Binary expressions
+
     `<simple expr> <standard binary operator> <simple expr>`
+
     Standard binary operators:
 	  * `+` Addition
 	  * `-` Subtraction
@@ -124,29 +154,49 @@ The expressions are designed in such a way where there are no ambigous expressio
 	  * `^` Bitwise xor
 	  * `|` Bitwise or
   * Unary expression
+
     `<unary op> <simple expr>`
+
     Unary operators:
       * `~` bitwise not
       * `-` 2's complement negate
+
    * Ternary expression
+
    	 `<simple expr> ? <non-inplace expr> : <non-inplace expr>`
+
    	 If the first expression is nonzero, evaluates to the first expression, otherwise the second one
+
    	 `<simple expr> ?: <non-inplace expr>`
+
    	 Evaluates to the first expression if nonzero, otherwise the second
+
 * Simple expressions
   * Parenthesis
+
     `(<non-inplace expr>)`
+
   * Integral literals
+
     `420` or `0x69`
+
   * Identifiers
+
     `my_var`
+
   * Call expressions
+
     `<simple expr>(<non-inplace expr>, ...)`
+
   * Subscript expressions
+
     `<simple expr>[<non-inplace expr>]`
+
 * In-place expression
+
   `<simple expr> <in-place binary operator> <non-inplace expr>`
-  * In-place binary operators:
+
+  In-place binary operators:
     * `+=` Addition
     * `-=` Subtraction
     * `*=` Multiplication
@@ -159,25 +209,47 @@ The expressions are designed in such a way where there are no ambigous expressio
 ## Types of statements
 All statements are followed either by a block or a semicolon.
 * `break`
+
   Jumps past the end of the current `loop` block
+
 * `continue`
+
   Jumps back to the start of the current `loop` block
+
 * `endcase`
+
   Jumps past the end of the current `switch` block
+
 * `if`
+
   Runs either the first or the second branch based on the condition.
+
   Can optionally be followed by an `else` keyword and another block.
+
 * `loop`
-  Reruns the code within the block until a `break` or `return` statement. You can go to the top of the loop using `continue`.
+
+  Reruns the code within the block until a `break` or `return` statement.
+
+  You can go to the top of the loop using `continue`.
+
 * `return`
+
   Optionally return a value to the calling function.
+
 * `switch`
+
   Jumps to the case matching the value switched on.
+
   Default case is the first piece of code within the following block, no label needed.
+
   If control flow reaches the end of the switch block it falls through.
+
 * `unreachable`
+
   Assumes the statement is in dead code, a hint for compiler optimization
+
 * Expression statements
+
   Any expression above (but only in-place and call expressions are useful)
 
 ## Keywords
