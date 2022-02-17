@@ -65,10 +65,12 @@ enum {
 
 enum {
     MAP_SHARED    = 0x0001,
+    MAP_PRIVATE   = 0x0002,
     MAP_FIXED     = 0x0010,
     MAP_ANONYMOUS = 0x0020,
     MAP_ANON = MAP_ANONYMOUS,
     MAP_POPULATE  = 0x8000,
+    MAP_ANONYMOUS_PRIV = MAP_ANONYMOUS | MAP_PRIVATE,
 };
 
 fn mmap(addr, size, prot, flags, fd, offset) {
@@ -133,7 +135,7 @@ fn anon_mmap(size) {
     // Page align size up
     size += 0xFFF;
     size &= ~0xFFF;
-    return @syscall(SYS_MMAP, 0, size, PROT_RW, MAP_ANONYMOUS, 0, 0);
+    return @syscall(SYS_MMAP, 0, size, PROT_RW, MAP_ANONYMOUS_PRIV, 0, 0);
 }
 
 // Wrapper around mmap() to map a file
