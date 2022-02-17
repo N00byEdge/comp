@@ -92,6 +92,19 @@ fn parse_top_level() {
     loop {
         switch(tokenizer.peek_type()) {
             @todo("parse_top_level default");
+
+        case tokenizer.keyword_zeroes:
+            @todo("parse_top_level zeroes");
+
+        case tokenizer.keyword_fn:
+            @todo("parse_top_level fn");
+
+        case tokenizer.keyword_enum:
+            @todo("parse_top_level enum");
+
+        case tokenizer.keyword_comptime:
+            @todo("parse_top_level comptime");
+
         case tokenizer.keyword_import:
             parse_import();
             continue;
