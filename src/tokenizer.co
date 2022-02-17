@@ -24,11 +24,17 @@ enum {
     open_square_bracket,
     closing_square_bracket,
 
-    //less_than, // <
-    //less_than_equal, // <=
+    less_than, // <
+    less_than_equal, // <=
 
-    //greater_than, // >
-    //greater_than_equal, // >=
+    greater_than, // >
+    greater_than_equal, // >=
+
+    shift_left, // <<
+    shift_left_inplace, // <<=
+
+    shift_right, // >>
+    shift_right_inplace, // >>=
 
     assignment, // =
     equals, // ==
@@ -40,7 +46,7 @@ enum {
 
     question_mark, // ?
 
-    //bitnot, // ~
+    bitnot, // ~
 
     dot, // .
 
@@ -205,6 +211,10 @@ fn read_int_literal_token_zero() {
     }
 }
 
+fn read_char_literal_token() {
+    @todo("read_char_literal_token");
+}
+
 fn read_string_literal_token() [len] {
     @write64(token_type, string_literal);
     len = 0;
@@ -261,6 +271,10 @@ fn fill_token() [chr] {
 
             case '"': source.consume(1);
                 read_string_literal_token();
+                return;
+
+            case '\'': source.consume(1);
+                read_char_literal_token();
                 return;
 
             case '=':
@@ -342,6 +356,11 @@ fn fill_token() [chr] {
             case ']':
                 source.consume(1);
                 token_type[0] = closing_square_bracket;
+                return;
+
+            case '~':
+                source.consume(1);
+                token_type[0] = bitnot;
                 return;
 
             case '|':
@@ -445,6 +464,52 @@ fn fill_token() [chr] {
                     continue;
                 }
 
+            case '<':
+                switch(source.peek(1)) {
+                    source.consume(1);
+                    token_type[0] = less_than;
+                    return;
+
+                case '<':
+                    if(source.peek(2) == '=') {
+                        source.consume(3);
+                        token_type[0] = shift_left_inplace;
+                        return;
+                    } else {
+                        source.consume(2);
+                        token_type[0] = shift_left;
+                        return;
+                    }
+
+                case '=':
+                    source.consume(2);
+                    token_type[0] = less_than_equal;
+                    return;
+                }
+
+            case '>':
+                switch(source.peek(1)) {
+                    source.consume(1);
+                    token_type[0] = greater_than;
+                    return;
+
+                case '>':
+                    if(source.peek(2) == '=') {
+                        source.consume(3);
+                        token_type[0] = shift_right_inplace;
+                        return;
+                    } else {
+                        source.consume(2);
+                        token_type[0] = shift_right;
+                        return;
+                    }
+
+                case '=':
+                    source.consume(2);
+                    token_type[0] = greater_than_equal;
+                    return;
+                }
+
             case 'a'...'z':
             case 'A'...'Z':
             case '@':
@@ -522,15 +587,20 @@ fn peek_type() {
     return token_type[0];
 }
 
+fn error(fail_message) {
+    printer.print_string("Unexpected token type: ");
+    printer.print_string(fail_message);
+    printer.putchar('\n');
+    printer.exit(1);
+    unreachable;
+}
+
 fn expect_token(expected_type, fail_message) {
     fill_token();
     if(expected_type == token_type[0]) {
         return token_value[0];
     } else {
-        printer.print_string("Unexpected token type: ");
-        printer.print_string(fail_message);
-        printer.putchar('\n');
-        printer.exit(1);
+        error(fail_message);
         unreachable;
     }
 }
