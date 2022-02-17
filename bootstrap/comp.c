@@ -1065,6 +1065,32 @@ void parse_eval_with_precedence(int precedence, struct trie_node_value *var_name
                 }
                 return;
 
+            case '/':
+                // Binary modulus
+                // Assoc: Left-to-Right
+                // Prec: 3
+                if(3 >= precedence) {
+                    consume();
+                    // push rax
+                    write8(0x50, SECTION_TEXT);
+                    parse_eval_with_precedence(3, 0);
+
+                    // pop rcx
+                    write8(0x59, SECTION_TEXT);
+
+                    // xchg rax, rcx
+                    write8(0x48, SECTION_TEXT);
+                    write8(0x91, SECTION_TEXT);
+
+                    // div rcx (rax /= rcx, rdx = rax % rcx)
+                    write8(0x48, SECTION_TEXT);
+                    write8(0x0F, SECTION_TEXT);
+                    write8(0xAF, SECTION_TEXT);
+                    write8(0xC2, SECTION_TEXT);
+                    break;
+                }
+                return;
+
             case '&':
                 // Binary bitwise and
                 // Assoc: Left-to-Right
