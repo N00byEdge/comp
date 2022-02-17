@@ -38,7 +38,7 @@ enum {
     colon, // :
     semicolon, // ;
 
-    //question_mark, // ?
+    question_mark, // ?
 
     //bitnot, // ~
 
@@ -249,6 +249,11 @@ fn fill_token() [chr] {
                     token_type[0] = not_equals;
                     return;
                 }
+
+            case '?':
+                source.consume(1);
+                token_type[0] = question_mark;
+                return;
 
             case ',':
                 source.consume(1);
