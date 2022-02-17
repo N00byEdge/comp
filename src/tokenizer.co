@@ -171,9 +171,38 @@ fn attempt_keyword(keyword_text, keyword) [idx, chr] {
     }
 }
 
-fn read_int_literal_token() {
+fn read_int_literal_token_hex() {
     token_type[0] = int_literal;
-    @todo("read_int_literal_token");
+    token_value[0] = 0;
+    @todo("read_int_literal_token_hex");
+}
+
+fn read_int_literal_token_decimal() [chr] {
+    token_type[0] = int_literal;
+    token_value[0] = 0;
+
+    loop {
+        token_value[0] *= 10;
+        chr = source.peek(0);
+        switch(chr) {
+            return;
+        case '0'...'9':
+            source.consume(1);
+            chr -= '0';
+            token_value[0] += chr;
+            continue;
+        }
+    }
+}
+
+fn read_int_literal_token_zero() {
+    // peek(0) == '0' when we enter here
+    if(source.peek(1) == 'x') {
+        source.consume(2);
+        return read_int_literal_token_hex();
+    } else {
+        return read_int_literal_token_decimal();
+    }
 }
 
 fn read_string_literal_token() [len] {
@@ -222,8 +251,12 @@ fn fill_token() [chr] {
                 source.consume(1);
                 continue;
 
-            case '0'...'9':
-                read_int_literal_token();
+            case '0':
+                read_int_literal_token_zero();
+                return;
+
+            case '1'...'9':
+                read_int_literal_token_decimal();
                 return;
 
             case '"': source.consume(1);
