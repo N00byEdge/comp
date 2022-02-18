@@ -29,11 +29,12 @@ fn section_addr(section) {
     return section_base_addrs[section * 8] + current_section_bytes[section * 8];
 }
 
-fn write_generic(value, section, num_bytes) {
+fn write_generic(value, section, num_bytes) [ptr] {
     if(section != bss) {
-        current_section_buf[section_offset(section)] = value;
+        ptr = current_section_buf[section * 8] + section_offset(section);
+        @write64(ptr, value);
     } else {}
-    current_section_bytes += num_bytes;
+    current_section_bytes[section * 8] += num_bytes;
 }
 
 fn code_offset() {
