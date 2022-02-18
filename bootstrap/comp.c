@@ -2775,13 +2775,13 @@ u64 builtin_call(int context) {
             consume();
             // Get all of the other argumens in there
             put_fargs_in_regs(arg_regs);
+        } else {
+            assert(consume() == ')');
         }
 
         // call rax
         write8(0xFF, SECTION_TEXT);
         write8(0xD0, SECTION_TEXT);
-
-        assert(consume() == ')');
         break;
     }
     return 0;
