@@ -91,12 +91,15 @@ enum {
     keyword_case,
     keyword_comptime,
     keyword_continue,
+    keyword_else,
     keyword_endcase,
     keyword_enum,
     keyword_fn,
     keyword_if,
     keyword_import,
     keyword_loop,
+    keyword_return,
+    keyword_switch,
     keyword_undefined,
     keyword_unreachable,
     keyword_zeroes,
@@ -544,7 +547,7 @@ fn fill_token() [chr] {
                         return attempt_keyword("enum", keyword_enum);
                     }
                 } else {
-                    return parse_identifier();
+                    return attempt_keyword("else", keyword_else);
                 }
 
             case 'f':
@@ -561,6 +564,12 @@ fn fill_token() [chr] {
 
             case 'l':
                 return attempt_keyword("loop", keyword_loop);
+
+            case 'r':
+                return attempt_keyword("return", keyword_return);
+
+            case 's':
+                return attempt_keyword("switch", keyword_switch);
 
             case 'u':
                 if(source.peek(1) == 'n') {
