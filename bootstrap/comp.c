@@ -961,6 +961,7 @@ void parse_eval_with_precedence(int precedence, struct trie_node_value *var_name
             case ']':
             case ')':
             case ';':
+            case ',':
                 return;
 
             // Binary operators
