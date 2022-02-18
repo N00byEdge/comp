@@ -1,6 +1,7 @@
-import "src/identifiers.co" idents;
-import "src/identifier_types.co" ident_types;
 import "src/builtin_bits.co" bits;
+import "src/codegen.co" codegen;
+import "src/identifier_types.co" ident_types;
+import "src/identifiers.co" idents;
 
 fn builtin_size_of(context) {
 	@todo();

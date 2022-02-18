@@ -1,6 +1,3 @@
-import "src/tokenizer.co" tokenizer;
-
-import "src/identifiers.co" identifiers;
 import "src/writer.co" writer;
 import "src/tokenizer.co" tokenizer;
 
@@ -13,53 +10,17 @@ comptime target_arch_aarch64 = 1;
 comptime target_os_linux = 0;
 comptime target_os_florence = 1;
 
-fn aarch64_mov(extraBits, value) [] {
-    value &= 0xFFFF;
-    value = 0xD2800000 | (value << 5) | extraBits;
-    writer.code32(value);
+zeroes store_args_ptr[8];
+
+fn load_reg_value(regnum, value) {
+
 }
 
-comptime movz_bits = 0;
-comptime movk_bits = 0x2000000;
+fn store_args(num_args) {
+    @assert(store_args_ptr[0]);
+    @call(store_args_ptr[0], num_args);
+}
 
-comptime mov_lsl0  = 0x0 << 21;
-comptime mov_lsl16 = 0x1 << 21;
-comptime mov_lsl32 = 0x2 << 21;
-comptime mov_lsl48 = 0x3 << 21;
-
-fn instr_load_imm(regnum, value) [tmp] {
-    if(target_arch == target_arch_aarch64) {
-        //assert(regnum < 0x20);
-        tmp = regnum | movz_bits | mov_lsl0;
-        aarch64_mov(tmp, value);
-
-        value >>= 16;
-        tmp = regnum | movk_bits | mov_lsl16;
-        aarch64_mov(tmp, value);
-
-        value >>= 16;
-        tmp = regnum | movk_bits | mov_lsl32;
-        aarch64_mov(tmp, value);
-
-        value >>= 16;
-        tmp = regnum | movk_bits | mov_lsl48;
-        aarch64_mov(tmp, value);
-        return 0;
-    } else {}
-    if(target_arch == target_arch_x86_64) {
-        @assert(regnum < 0x10);
-
-        if(regnum >= 8) {
-            regnum -= 8;
-            writer.code8(0x49);
-        } else {
-            writer.code8(0x48);
-        }
-
-        regnum |= 0xB8;
-        writer.code8(regnum);
-        writer.code64(value);
-
-        return 0;
-    } else {}
+fn parse_block() {
+    @todo("codegen parse_block");
 }

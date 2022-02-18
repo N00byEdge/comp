@@ -26,6 +26,7 @@ fn assert_fail(statement, file, line) {
 // Everything else
 import "src/compiler.co" compiler;
 import "src/strings.co" strings;
+import "src/x86_64.co" x86_64;
 
 fn main(argc, argv) [tmp] {
     if(argc < 3) {
@@ -44,6 +45,8 @@ fn main(argc, argv) [tmp] {
         tmp = argv[2 * 8];
         tmp = strings.parse_detect(tmp, 16);
         compiler.init(tmp);
+
+        x86_64.init();
 
         // Get the root source file
         tmp = argv[1 * 8];

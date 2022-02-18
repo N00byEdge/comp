@@ -19,8 +19,6 @@ fn init(binary_base_addr) {
     section_base_addrs[0x08] = binary_base_addr + max_section_bytes * 1;
     section_base_addrs[0x10] = binary_base_addr + max_section_bytes * 2;
     section_base_addrs[0x18] = binary_base_addr + max_section_bytes * 3;
-
-    //current_section_buf[0]
 }
 
 fn section_offset(section) {
@@ -36,22 +34,6 @@ fn write_generic(value, section, num_bytes) {
         current_section_buf[section_offset(section)] = value;
     } else {}
     current_section_bytes += num_bytes;
-}
-
-fn code8(value) {
-    return write_generic(value, text, 1);
-}
-
-fn code16(value) {
-    return write_generic(value, text, 2);
-}
-
-fn code32(value) {
-    return write_generic(value, text, 4);
-}
-
-fn code64(value) {
-    return write_generic(value, text, 8);
 }
 
 fn code_offset() {

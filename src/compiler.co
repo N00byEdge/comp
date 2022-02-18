@@ -1,10 +1,11 @@
-import "src/tokenizer.co" tokenizer;
-import "src/writer.co" writer;
+import "src/codegen.co" codegen;
+import "src/identifier_types.co" itypes;
+import "src/identifiers.co" idents;
 import "src/printer.co" printer;
 import "src/source.co" source;
 import "src/syscalls.co" syscalls;
-import "src/identifiers.co" idents;
-import "src/identifier_types.co" itypes;
+import "src/tokenizer.co" tokenizer;
+import "src/writer.co" writer;
 
 zeroes import_file_root[8];
 zeroes parse_top_level_ptr[8];
@@ -147,12 +148,8 @@ fn parse_comptime_decl() [value_node, value] {
     idents.node_set_value(value_node, value);
     idents.node_set_type(value_node, itypes.comptime_int);
 
-    tokenizer.expect_token(tokenizer.semicolon, "Expected `;` after comptime decl");
+    tokenizer.expect_token(tokenizer.semicolon, "Expected `;` after comptime declaration");
     tokenizer.discard();
-}
-
-fn parse_block() {
-
 }
 
 fn parse_enum_decl() [next_value, node] {
@@ -166,7 +163,7 @@ fn parse_enum_decl() [next_value, node] {
     loop {
         if(tokenizer.peek_type() == tokenizer.closing_curly_brace) {
             tokenizer.discard();
-            tokenizer.expect_token(tokenizer.semicolon, "Expected `;` after enum decl");
+            tokenizer.expect_token(tokenizer.semicolon, "Expected `;` after enum declaration");
             tokenizer.discard();
             return;
         } else {
@@ -262,6 +259,93 @@ fn add_builtins_to_current_file() {
 
 }
 
+// Parse function argument and local variable list, creating identifiers
+// and storing the argument values in their stack slots
+fn read_stack_frame() [offset, num, ident, size] {
+    offset = 0;
+
+    if(tokenizer.peek_type() == tokenizer.open_paren) {
+        tokenizer.discard();
+        // Parse argument list
+        num = 0;
+
+        loop {
+            if(tokenizer.peek_type() == tokenizer.closing_paren) {
+                tokenizer.discard();
+                if(num) {
+                    codegen.store_args(num);
+                } else {}
+                break;
+            } else {
+                ident = tokenizer.expect_token(tokenizer.identifier, "Expected identifier or `)`");
+                tokenizer.discard();
+                @assert(idents.node_get_type(ident) == itypes.none);
+
+                idents.node_set_type(ident, itypes.local_variable);
+
+                offset += 8;
+
+                idents.node_set_value(ident, offset);
+
+                num += 1;
+            }
+
+            if(tokenizer.peek_type() == tokenizer.comma) {
+                tokenizer.discard();
+            } else {}
+            continue; // @BUG: I need this for some reason.
+        }
+    } else {}
+
+    if(tokenizer.peek_type() == tokenizer.open_square_bracket) {
+        tokenizer.discard();
+        // Parse local var list
+        loop {
+            if(tokenizer.peek_type() == tokenizer.closing_square_bracket) {
+                tokenizer.discard();
+                break;
+            } else {
+                ident = tokenizer.expect_token(tokenizer.identifier, "Expected identifier or `)`");
+                tokenizer.discard();
+                @assert(idents.node_get_type(ident) == itypes.none);
+
+                if(tokenizer.peek_type() == tokenizer.open_square_bracket) {
+                    tokenizer.discard();
+
+                    idents.node_set_type(ident, itypes.local_buffer);
+                    size = parse_comptime_value(any_unambigous_expr);
+
+                    offset += size;
+                    idents.node_set_value(ident, offset);
+                    idents.node_set_attribute(ident, size);
+                } else {
+                    idents.node_set_type(ident, itypes.local_variable);
+
+                    offset += 8;
+                    idents.node_set_value(ident, offset);
+                }
+            }
+
+            if(tokenizer.peek_type() == tokenizer.comma) {
+                tokenizer.discard();
+            } else {}
+        }
+    } else {}
+}
+
+fn parse_function() [fn_ident] {
+    tokenizer.discard();
+
+    fn_ident = tokenizer.expect_token(tokenizer.identifier, "Expected identifier after `fn`");
+    tokenizer.discard();
+
+    read_stack_frame();
+
+    codegen.parse_block();
+
+    @todo("Clear local variables");
+}
+
 fn parse_top_level() {
     printer.print_string("Top level!\n");
     tokenizer.current_file_root[0] = idents.alloc();
@@ -275,7 +359,8 @@ fn parse_top_level() {
             @todo("parse_top_level zeroes");
 
         case tokenizer.keyword_fn:
-            @todo("parse_top_level fn");
+            parse_function();
+            continue;
 
         case tokenizer.keyword_enum:
             parse_enum_decl();
