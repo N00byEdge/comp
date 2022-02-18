@@ -1,6 +1,8 @@
 // Doesn't affect bss, otherwise we can't compile ourselves :^)
 comptime max_section_bytes = 0x100000;
 
+import "src/syscalls.co" syscalls;
+
 enum {
     text,
     data,
@@ -19,6 +21,10 @@ fn init(binary_base_addr) {
     section_base_addrs[0x08] = binary_base_addr + max_section_bytes * 1;
     section_base_addrs[0x10] = binary_base_addr + max_section_bytes * 2;
     section_base_addrs[0x18] = binary_base_addr + max_section_bytes * 3;
+
+    current_section_buf[0x00] = syscalls.anon_mmap(max_section_bytes);
+    current_section_buf[0x08] = syscalls.anon_mmap(max_section_bytes);
+    current_section_buf[0x10] = syscalls.anon_mmap(max_section_bytes);
 }
 
 fn section_offset(section) {
