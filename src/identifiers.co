@@ -42,22 +42,22 @@ fn trie_node_set_next(node_ptr, idx, next) [tmp] {
     @write32(tmp, next);
 }
 
-fn lookup(name, idx) [addr, chr] {
+fn lookup(name, node) [addr, chr] {
     loop {
         chr = @read8(name);
         if(chr) {
-            addr = node_addr(idx);
-            idx = trie_node_next(addr, chr);
+            addr = node_addr(node);
+            node = trie_node_next(addr, chr);
             name += 1;
-            if(idx) {
+            if(node) {
                 continue;
             } else {
-                idx = alloc();
-                trie_node_set_next(addr, chr, idx);
+                node = alloc();
+                trie_node_set_next(addr, chr, node);
                 continue;
             }
         } else {
-            return idx;
+            return node;
         }
     }
 }
