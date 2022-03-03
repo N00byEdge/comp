@@ -718,7 +718,18 @@ int put_fargs_in_regs(u32 *reg_list) {
                     break;
 
                 case TRIE_TYPE_FUNCTION_OFFSET:
-                    TODO
+                    if(arg_reg >= 8) {
+                        arg_reg -= 8;
+                        write8(0x4C, SECTION_TEXT);
+                    } else {
+                        write8(0x48, SECTION_TEXT);
+                    }
+
+                    // lea arg_reg, [rel fn]
+                    write8(0x8D, SECTION_TEXT);
+                    write8(0x05 | (arg_reg << 3), SECTION_TEXT);
+                    riprel_text_off_32(var_name_node->value);
+                    break;
 
                 case TRIE_TYPE_NONE:
                     assert(!"Unknown identifier!");
