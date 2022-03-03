@@ -2799,7 +2799,17 @@ u64 builtin_call(int context) {
 }
 
 u64 builtin_panic(int context) {
-    TODO
+    skip_whitespace();
+
+    switch(context) {
+    case 0: TODO
+    case 1:
+        put_fargs_in_regs(jmp_assert_regs);
+        jump_to_assert_fail();
+        return 0;
+    }
+
+    return 0;
 }
 
 void add_builtins() {
