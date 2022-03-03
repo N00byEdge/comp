@@ -3,8 +3,10 @@
 // Node next index size
 comptime trie_node_next_size = 4;
 
+comptime max_nexts = 0x80;
+
 // Node value offset
-comptime trie_node_value = 0x80 * trie_node_next_size;
+comptime trie_node_value = max_nexts * trie_node_next_size;
 
 // Size of an entire trie node, including next pointers, attribute and value
 comptime trie_node_size = trie_node_value + (4 + 4 + 8);
@@ -29,11 +31,13 @@ fn node_addr(node_idx) {
 }
 
 fn trie_node_next(node_ptr, idx) [tmp] {
+    @assert(idx < max_nexts);
     tmp = node_ptr + (idx * trie_node_next_size);
     @read32(tmp);
 }
 
 fn trie_node_set_next(node_ptr, idx, next) [tmp] {
+    @assert(idx < max_nexts);
     tmp = node_ptr + (idx * trie_node_next_size);
     @write32(tmp, idx);
 }
