@@ -114,7 +114,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         eval_expr(primary_expr_only);
 
         if(eval_type[0] == itypes.comptime_int) {
-            eval_value[0] = ~eval_value[0];
+            lhs_value = ~eval_value[0];
         } else {
             bitwise_negate();
         }
@@ -125,7 +125,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         eval_expr(primary_expr_only);
 
         if(eval_type[0] == itypes.comptime_int) {
-            eval_value[0] = -eval_value[0];
+            lhs_value = -eval_value[0];
         } else {
             @todo("eval_expr arith negate");
         }
@@ -139,9 +139,9 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         endcase;
 
     case tokenizer.int_literal:
-        eval_value[0] = peek_value();
+        lhs_value = peek_value();
         discard();
-        eval_type[0] = itypes.comptime_int;
+        lhs_type = itypes.comptime_int;
         endcase;
 
     case tokenizer.string_literal:
@@ -219,12 +219,12 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         }
     }
 
+    eval_type[0] = lhs_type;
+    eval_value[0] = lhs_value;
+
     if(primary_expr_only) {
         return;
     } else {
-        lhs_type = eval_type[0];
-        lhs_value = eval_value[0];
-
         switch(peek_type()) {
             @todo("eval_expr default op");
         case tokenizer.closing_paren:
