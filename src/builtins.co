@@ -1,4 +1,3 @@
-import "src/builtin_bits.co" bits;
 import "src/codegen.co" codegen;
 import "src/identifier_types.co" itypes;
 import "src/identifiers.co" idents;
@@ -10,8 +9,8 @@ enum {
 
 zeroes builtin_root[8];
 
-fn builtin_memcpy() {
-	@todo();
+fn builtin_size_of(context) {
+	@todo("builtin size_of");
 }
 
 fn add_builtin(name, fptr, type) [node] {
