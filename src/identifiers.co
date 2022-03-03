@@ -33,7 +33,7 @@ fn node_addr(node_idx) {
 fn trie_node_next(node_ptr, idx) [tmp] {
     @assert(idx < max_nexts);
     tmp = node_ptr + (idx * trie_node_next_size);
-    @read32(tmp);
+    return @read32(tmp);
 }
 
 fn trie_node_set_next(node_ptr, idx, next) [tmp] {
