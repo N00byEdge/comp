@@ -210,6 +210,9 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
 
                 lhs_value = 0x41414141;
                 lhs_type = itypes.runtime_int;
+
+                tokenizer.expect_token(tokenizer.closing_paren, "Expected ')' after argument list");
+                tokenizer.discard();
                 endcase;
 
             case itypes.builtin_function_comptime:
