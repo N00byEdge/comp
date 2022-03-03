@@ -13,6 +13,10 @@ fn builtin_size_of(context) {
 	@todo("builtin size_of");
 }
 
+fn builtin_embed(context) {
+	@todo("builtin embed");
+}
+
 fn add_builtin(name, fptr, type) [node] {
 	node = builtin_root[0];
 	node = idents.lookup(name, node);
@@ -29,4 +33,5 @@ fn create_builtin_node() [val] {
 	val = builtin_root[0];
 
 	add_builtin("size_of", builtin_size_of, itypes.builtin_function_comptime);
+	add_builtin("embed", builtin_embed, itypes.builtin_function_comptime);
 }
