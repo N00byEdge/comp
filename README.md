@@ -197,6 +197,7 @@ The expressions are designed in such a way where there are no ambigous expressio
   `<simple expr> <in-place binary operator> <non-inplace expr>`
 
   In-place binary operators:
+    * `=` Assignment
     * `+=` Addition
     * `-=` Subtraction
     * `*=` Multiplication
