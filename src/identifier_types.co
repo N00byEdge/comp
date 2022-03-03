@@ -8,11 +8,17 @@ enum {
 	// Buffer local variable, value is rbp offset and attribute is size
 	local_buffer,
 
+	// The non-dereferenced address of a local buffer
+	local_buffer_addr,
+
 	// Non-buffer global variable, value is address
 	global_variable,
 
 	// Buffer global variable, value is address and attribute is size
 	global_buffer,
+
+	// The non-dereferenced address of a global variable
+	global_buffer_addr,
 
 	// This filename has finished parsing, attribute is variable scope node id
 	fully_parsed_filename,
@@ -35,6 +41,6 @@ enum {
 	// A builtin function that can be called from user code during compile time evaluation
 	builtin_function_comptime,
 
-	// A builtin function that can be called any context
-	builtin_function_any,
+	// Some kind of runtime known pointer sized int
+	runtime_int,
 };

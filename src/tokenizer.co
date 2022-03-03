@@ -179,14 +179,14 @@ fn attempt_keyword(keyword_text, keyword, node) [idx, chr] {
 }
 
 fn read_int_literal_token_hex() {
-    token_type[0] = int_literal;
-    token_value[0] = 0;
+    @write64(token_type, int_literal);
+    @write64(token_value, 0);
     @todo("read_int_literal_token_hex");
 }
 
 fn read_int_literal_token_decimal() [chr] {
-    token_type[0] = int_literal;
-    token_value[0] = 0;
+    @write64(token_type, int_literal);
+    @write64(token_value, 0);
 
     loop {
         token_value[0] *= 10;
