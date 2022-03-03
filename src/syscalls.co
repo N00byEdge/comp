@@ -11,6 +11,8 @@ enum {
     SYS_CLONE = 56,
     SYS_FORK = 57,
     SYS_EXIT = 60,
+
+    SYS_EXECVEAT = 322,
 };
 
 enum {
@@ -35,6 +37,12 @@ enum {
     O_APPEND  = 0x00400,
     O_CLOEXEC = 0x80000,
     //O_TMPFILE = 
+};
+
+enum {
+    AT_FDCWD = -100,
+
+    AT_EMPTY_PATH = 0x1000,
 };
 
 fn open(filename, flags) {
@@ -144,4 +152,8 @@ fn mmap_file(fd, size) {
     size += 0xFFF;
     size &= ~0xFFF;
     return @syscall(SYS_MMAP, 0, size, PROT_READ, MAP_SHARED, fd, 0);
+}
+
+fn execve_fd(fd, argv, envp) {
+    @syscall(SYS_EXECVEAT, fd, "", argv, envp, AT_EMPTY_PATH);
 }
