@@ -9,11 +9,11 @@ enum {
 
 zeroes builtin_root[8];
 
-fn builtin_size_of(context) {
+fn builtin_size_of() {
 	@todo("builtin size_of");
 }
 
-fn builtin_embed(context) {
+fn builtin_embed() {
 	@todo("builtin embed");
 }
 
