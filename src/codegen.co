@@ -1,5 +1,7 @@
 import "src/writer.co" writer;
 import "src/tokenizer.co" tokenizer;
+import "src/identifier_types.co" itypes;
+import "src/identifiers.co" idents;
 
 zeroes target_arch[8];
 zeroes target_os[8];
@@ -10,17 +12,528 @@ comptime target_arch_aarch64 = 1;
 comptime target_os_linux = 0;
 comptime target_os_florence = 1;
 
+zeroes current_file_root[8];
+
+fn peek_type() [node] {
+    node = current_file_root[0];
+    tokenizer.peek_type(node);
+}
+
+fn peek_value() [node] {
+    node = current_file_root[0];
+    tokenizer.peek_value(node);
+}
+
+fn discard() [node] {
+    node = current_file_root[0];
+    tokenizer.discard(node);
+}
+
+fn expect_token(tok, str) [node] {
+    node = current_file_root[0];
+    tokenizer.expect_token(tok, str, node);
+}
+
+zeroes continue_addr[8];
+
+zeroes break_addr[8];
+zeroes break_was_used[8];
+
+zeroes endcase_addr[8];
+zeroes endcase_was_used[8];
+
+zeroes parse_top_level_ptr[8];
+// TODO
+
 zeroes store_args_ptr[8];
 
-fn load_reg_value(regnum, value) {
-
-}
-
 fn store_args(num_args) {
-    @assert(store_args_ptr[0]);
-    @call(store_args_ptr[0], num_args);
+    if(store_args_ptr[0]) {
+        @call(store_args_ptr[0], num_args);
+    } else {
+        tokenizer.error("store_args not implemented!");
+    }
 }
 
-fn parse_block() {
-    @todo("codegen parse_block");
+zeroes function_epilogue_ptr[8];
+
+fn function_epilogue() {
+    if(function_epilogue_ptr[0]) {
+        @call(function_epilogue_ptr[0]);
+    } else {
+        tokenizer.error("function_epilogue not implemented!");
+    }
+}
+
+zeroes jmp_to_ptr[8];
+
+fn jmp_to(addr) {
+    if(jmp_to_ptr[0]) {
+        @call(jmp_to_ptr[0], addr);
+    } else {
+        tokenizer.error("jmp_to not implemented!");
+    }
+}
+
+zeroes bitwise_negate_ptr[8];
+
+fn bitwise_negate() {
+    if(bitwise_negate_ptr[0]) {
+        @call(bitwise_negate_ptr[0]);
+    } else {
+        tokenizer.error("bitwise_negate not implemented!");
+    }
+}
+
+fn collapse_lhs(ident) {
+    switch(peek_type()) {
+    case tokenizer.dot:
+        if(idents.node_get_type(ident) == itypes.variable_scope) {
+            discard();
+        } else {
+            tokenizer.error("Expected a variable scope before `.`");
+            unreachable;
+        }
+    }
+}
+
+zeroes eval_type[8];
+// Only if comptime int
+zeroes eval_value[8];
+
+comptime primary_expr_only = 0;
+comptime any_unambigous_expr = 1;
+
+fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, extra_value] {
+    switch(peek_type()) {
+        tokenizer.error("Expected primary expression");
+        endcase;
+
+    case tokenizer.bitnot:
+        discard();
+        eval_expr(primary_expr_only);
+
+        if(eval_type[0] == itypes.comptime_int) {
+            eval_value[0] = ~eval_value[0];
+        } else {
+            bitwise_negate();
+        }
+        endcase;
+
+    case tokenizer.subtraction:
+        discard();
+        eval_expr(primary_expr_only);
+
+        if(eval_type[0] == itypes.comptime_int) {
+            eval_value[0] = -eval_value[0];
+        } else {
+            @todo("eval_expr arith negate");
+        }
+        endcase;
+
+    case tokenizer.open_paren:
+        discard();
+        eval_expr(any_unambigous_expr);
+        expect_token(tokenizer.closing_paren, "Expected `)` after expression");
+        discard();
+        endcase;
+
+    case tokenizer.int_literal:
+        eval_value[0] = peek_value();
+        discard();
+        eval_type[0] = itypes.comptime_int;
+        endcase;
+
+    case tokenizer.string_literal:
+        @todo("eval_expr strlit");
+
+    case tokenizer.identifier:
+        lhs_value = peek_value();
+        lhs_type = idents.node_get_type(lhs_value);
+
+        discard();
+
+        switch(lhs_type) {
+                lhs_value = idents.node_get_value(lhs_value);
+                endcase;
+
+            case itypes.none:
+                tokenizer.error("Unknown identifier!");
+
+            case itypes.local_buffer:
+                lhs_type = itypes.local_buffer_addr;
+                lhs_value = idents.node_get_value(lhs_value);
+                endcase;
+
+            case itypes.global_buffer:
+                lhs_type = itypes.global_buffer_addr;
+                lhs_value = idents.node_get_value(lhs_value);
+                endcase;
+
+            case itypes.variable_scope:
+                lhs_value = idents.node_get_attribute(lhs_value);
+        }
+
+        switch(peek_type()) {
+            endcase;
+
+        case tokenizer.open_square_bracket:
+            @todo("ident square bracket");
+
+        case tokenizer.open_paren:
+            discard();
+
+            switch(lhs_type) {
+                @todo("call ident default case");
+                endcase;
+
+            case itypes.local_variable:
+                @todo("local_variable call");
+
+            case itypes.local_buffer_addr:
+                @todo("local_buffer_addr call");
+
+            case itypes.global_variable:
+                @todo("global_variable call");
+
+            case itypes.global_buffer_addr:
+                @todo("global_buffer_addr call");
+
+            case itypes.comptime_int:
+                @todo("comptime_int call (?)");
+
+            case itypes.function_addr:
+                @todo("function_addr call");
+
+            case itypes.builtin_function_codegen:
+                @call(lhs_value);
+
+                lhs_value = 0x41414141;
+                lhs_type = itypes.runtime_int;
+                endcase;
+
+            case itypes.builtin_function_comptime:
+                lhs_value = @call(lhs_value);
+                lhs_type = itypes.comptime_int;
+            }
+        }
+    }
+
+    if(primary_expr_only) {
+        return;
+    } else {
+        lhs_type = eval_type[0];
+        lhs_value = eval_value[0];
+
+        switch(peek_type()) {
+            @todo("eval_expr default op");
+        case tokenizer.closing_paren:
+        case tokenizer.closing_curly_brace:
+        case tokenizer.closing_square_bracket:
+        case tokenizer.end_of_file:
+        case tokenizer.comma:
+        case tokenizer.semicolon:
+        case tokenizer.colon:
+        case tokenizer.dot_dot_dot:
+            return;
+
+        case tokenizer.less_than:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] = lhs_value < eval_value[0];
+                } else {
+                    @todo("eval_expr less_than 1");
+                }
+            } else {
+                @todo("eval_expr less_than 2");
+            }
+
+        case tokenizer.less_than_equal:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] = lhs_value <= eval_value[0];
+                } else {
+                    @todo("eval_expr less_than_equal 1");
+                }
+            } else {
+                @todo("eval_expr less_than_equal 2");
+            }
+
+        case tokenizer.greater_than:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] = lhs_value > eval_value[0];
+                } else {
+                    @todo("eval_expr greater_than 1");
+                }
+            } else {
+                @todo("eval_expr greater_than 2");
+            }
+
+        case tokenizer.greater_than_equal:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] = lhs_value >= eval_value[0];
+                } else {
+                    @todo("eval_expr greater_than_equal 1");
+                }
+            } else {
+                @todo("eval_expr greater_than_equal 2");
+            }
+
+        case tokenizer.equals:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] = lhs_value == eval_value[0];
+                } else {
+                    @todo("eval_expr equals 1");
+                }
+            } else {
+                @todo("eval_expr equals 2");
+            }
+
+        case tokenizer.not_equals:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] = lhs_value != eval_value[0];
+                } else {
+                    @todo("eval_expr not_equals 1");
+                }
+            } else {
+                @todo("eval_expr not_equals 2");
+            }
+
+        case tokenizer.bitor:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] |= lhs_value;
+                } else {
+                    @todo("eval_expr bitor 1");
+                }
+            } else {
+                @todo("eval_expr bitor 2");
+            }
+
+        case tokenizer.bitxor:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] ^= lhs_value;
+                } else {
+                    @todo("eval_expr bitxor 1");
+                }
+            } else {
+                @todo("eval_expr bitxor 2");
+            }
+
+        case tokenizer.bitand:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] &= lhs_value;
+                } else {
+                    @todo("eval_expr bitand 1");
+                }
+            } else {
+                @todo("eval_expr bitand 2");
+            }
+
+        case tokenizer.division:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] /= lhs_value;
+                } else {
+                    @todo("eval_expr division 1");
+                }
+            } else {
+                @todo("eval_expr division 2");
+            }
+
+        case tokenizer.modulus:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] %= lhs_value;
+                } else {
+                    @todo("eval_expr modulus 1");
+                }
+            } else {
+                @todo("eval_expr modulus 2");
+            }
+
+        case tokenizer.multiplication:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] *= lhs_value;
+                } else {
+                    @todo("eval_expr multiplication 1");
+                }
+            } else {
+                @todo("eval_expr multiplication 2");
+            }
+
+        case tokenizer.addition:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] += lhs_value;
+                } else {
+                    @todo("eval_expr addition 1");
+                }
+            } else {
+                @todo("eval_expr addition 2");
+            }
+
+        case tokenizer.subtraction:
+            discard();
+            eval_expr(primary_expr_only);
+
+            if(lhs_type == itypes.comptime_int) {
+                if(eval_type[0] == itypes.comptime_int) {
+                    eval_value[0] -= lhs_value;
+                } else {
+                    @todo("eval_expr subtraction 1");
+                }
+            } else {
+                @todo("eval_expr subtraction 2");
+            }
+
+        case tokenizer.question_mark:
+            discard();
+            // Ternary operator
+            extra_type = lhs_type;
+            extra_value = lhs_value;
+
+            eval_expr(any_unambigous_expr);
+
+            lhs_type = eval_type[0];
+            lhs_value = eval_value[0];
+
+            expect_token(tokenizer.colon, "Expected `:` after expression");
+            discard();
+
+            eval_expr(any_unambigous_expr);
+
+            rhs_type = eval_type[0];
+            rhs_value = eval_value[0];
+
+            @todo("eval_expr ternary impl");
+        }
+    }
+}
+
+fn eval_comptime_expr(mode) {
+    eval_expr(mode);
+    @assert(eval_type[0] == itypes.comptime_int);
+    return eval_value[0];
+}
+
+fn parse_block() [tmp] {
+    expect_token(tokenizer.open_curly_brace, "Expected `{`");
+    discard();
+    
+    loop {
+        switch(peek_type()) {
+            @todo("parse_block default");
+
+        case tokenizer.keyword_break:
+            discard();
+            expect_token(tokenizer.semicolon, "Expected `;` after `break`");
+            discard();
+
+            break_was_used[0] = 1;
+            tmp = break_addr[0];
+            jmp_to(tmp);
+        case tokenizer.keyword_unreachable:
+            break;
+
+        case tokenizer.keyword_endcase:
+            discard();
+            expect_token(tokenizer.semicolon, "Expected `;` after `endcase`");
+            discard();
+
+            endcase_was_used[0] = 1;
+            tmp = endcase_addr[0];
+            jmp_to(tmp);
+            break;
+
+        case tokenizer.keyword_continue:
+            discard();
+            expect_token(tokenizer.semicolon, "Expected `;` after `continue`");
+            discard();
+
+            tmp = continue_addr[0];
+            jmp_to(tmp);
+            break;
+
+        case tokenizer.keyword_return:
+            discard();
+            if(peek_type() != tokenizer.semicolon) {
+                eval_expr();
+                if(eval_type[0] == itypes.comptime_int) {
+                    @todo("codegen comptime int");
+                } else { }
+                expect_token(tokenizer.semicolon, "Expected `;` after `return` statment");
+            } else { }
+            discard();
+            function_epilogue();
+            break;
+        }
+
+        // Loop here util we have non-dead code
+        loop {
+            switch(peek_type()) {
+                tokenizer.error("Dead code");
+            case tokenizer.keyword_unreachable:
+                discard();
+                expect_token(tokenizer.keyword_unreachable, "Expected `;` after `unreachable`");
+                continue;
+
+            case tokenizer.keyword_case:
+            case tokenizer.closing_curly_brace:
+                break;
+            }
+        }
+
+        if(peek_type() == tokenizer.closing_curly_brace) {
+            return;
+        } else {
+            continue;
+        }
+    }
 }

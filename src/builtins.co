@@ -1,28 +1,33 @@
 import "src/builtin_bits.co" bits;
 import "src/codegen.co" codegen;
-import "src/identifier_types.co" ident_types;
+import "src/identifier_types.co" itypes;
 import "src/identifiers.co" idents;
 
-fn builtin_size_of(context) {
-	@todo();
-}
+enum {
+    eval_comptime,
+    eval_codegen,
+};
+
+zeroes builtin_root[8];
 
 fn builtin_memcpy() {
 	@todo();
 }
 
-fn add_builtin(name, fptr, type, node) {
+fn add_builtin(name, fptr, type) [node] {
+	node = builtin_root[0];
 	node = idents.lookup(name, node);
-	@assert(idents.node_get_type(node) == ident_types.none);
+
+	@assert(idents.node_get_type(node) == itypes.none);
 	idents.node_set_type(node, type);
 	idents.node_set_value(node, fptr);
 }
 
-fn create_builtin_node() [node] {
+fn create_builtin_node() [val] {
 	// Create the node itself
-	node = idents.alloc();
+	builtin_root[0] = idents.alloc();
 
-	add_builtin("memcpy", builtin_size_of, ident_types.builtin_function_codegen, node);
+	val = builtin_root[0];
 
-	add_builtin("size_of", builtin_size_of, ident_types.builtin_function_any, node);
+	add_builtin("size_of", builtin_size_of, itypes.builtin_function_comptime);
 }

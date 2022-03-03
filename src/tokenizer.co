@@ -125,20 +125,18 @@ fn is_ident_chr(idx) {
     case 'a'...'z':
     case 'A'...'Z':
     case '0'...'9':
+    case '@':
     case '_':
         return 1;
     }
     unreachable;
 }
 
-zeroes current_file_root[8];
-
-fn parse_identifier() [node, ptr] {
+fn parse_identifier(node) [ptr] {
     @assert(is_first_ident_chr(0));
 
     @write64(token_type, identifier);
     ptr = buffer;
-    node = current_file_root[0];
 
     loop {
         if(is_ident_chr(0)) {
@@ -154,7 +152,7 @@ fn parse_identifier() [node, ptr] {
     }
 }
 
-fn attempt_keyword(keyword_text, keyword) [idx, chr] {
+fn attempt_keyword(keyword_text, keyword, node) [idx, chr] {
     idx = 0;
     loop {
         chr = @read8(keyword_text);
@@ -164,12 +162,12 @@ fn attempt_keyword(keyword_text, keyword) [idx, chr] {
                 idx += 1;
                 continue;
             } else {
-                parse_identifier();
+                parse_identifier(node);
                 return;
             }
         } else {
             if(is_ident_chr(idx)) {
-                parse_identifier();
+                parse_identifier(node);
                 return;
             } else {
                 source.consume(idx);
@@ -238,7 +236,7 @@ fn read_string_literal_token() [len] {
     }
 }
 
-fn fill_token() [chr] {
+fn fill_token(node) [chr] {
     if(token_type[0] == none) {
         loop {
             token_line[0] = source.current_line[0];
@@ -517,109 +515,109 @@ fn fill_token() [chr] {
             case 'A'...'Z':
             case '@':
             case '_':
-                return parse_identifier();
+                return parse_identifier(node);
 
             case 'b':
-                return attempt_keyword("break", keyword_break);
+                return attempt_keyword("break", keyword_break, node);
 
             case 'c':
                 switch(source.peek(1)) {
-                    return parse_identifier();
+                    return parse_identifier(node);
                 case 'a':
-                    return attempt_keyword("case", keyword_case);
+                    return attempt_keyword("case", keyword_case, node);
                 case 'o':
                     switch(source.peek(2)) {
-                        return parse_identifier();
+                        return parse_identifier(node);
                     case 'm':
-                        return attempt_keyword("comptime", keyword_comptime);
+                        return attempt_keyword("comptime", keyword_comptime, node);
                     case 'n':
-                        return attempt_keyword("continue", keyword_continue);
+                        return attempt_keyword("continue", keyword_continue, node);
                     }
                 }
 
             case 'e':
                 if(source.peek(1) == 'n') {
                     switch(source.peek(2)) {
-                        return parse_identifier();
+                        return parse_identifier(node);
                     case 'd':
-                        return attempt_keyword("endcase", keyword_endcase);
+                        return attempt_keyword("endcase", keyword_endcase, node);
                     case 'u':
-                        return attempt_keyword("enum", keyword_enum);
+                        return attempt_keyword("enum", keyword_enum, node);
                     }
                 } else {
-                    return attempt_keyword("else", keyword_else);
+                    return attempt_keyword("else", keyword_else, node);
                 }
 
             case 'f':
-                return attempt_keyword("fn", keyword_fn);
+                return attempt_keyword("fn", keyword_fn, node);
 
             case 'i':
                 switch(source.peek(1)) {
-                    return parse_identifier();
+                    return parse_identifier(node);
                 case 'f':
-                    return attempt_keyword("if", keyword_if);
+                    return attempt_keyword("if", keyword_if, node);
                 case 'm':
-                    return attempt_keyword("import", keyword_import);
+                    return attempt_keyword("import", keyword_import, node);
                 }
 
             case 'l':
-                return attempt_keyword("loop", keyword_loop);
+                return attempt_keyword("loop", keyword_loop, node);
 
             case 'r':
-                return attempt_keyword("return", keyword_return);
+                return attempt_keyword("return", keyword_return, node);
 
             case 's':
-                return attempt_keyword("switch", keyword_switch);
+                return attempt_keyword("switch", keyword_switch, node);
 
             case 'u':
                 if(source.peek(1) == 'n') {
                     switch(source.peek(2)) {
-                        return parse_identifier();
+                        return parse_identifier(node);
                     case 'd':
-                        return attempt_keyword("undefined", keyword_undefined);
+                        return attempt_keyword("undefined", keyword_undefined, node);
                     case 'r':
-                        return attempt_keyword("unreachable", keyword_unreachable);
+                        return attempt_keyword("unreachable", keyword_unreachable, node);
                     }
                 } else {
-                    return parse_identifier();
+                    return parse_identifier(node);
                 }
 
             case 'z':
-                return attempt_keyword("zeroes", keyword_zeroes);
+                return attempt_keyword("zeroes", keyword_zeroes, node);
             }
         }
     } else { }
 }
 
-fn peek_type() {
-    fill_token();
+fn peek_type(node) {
+    fill_token(node);
     return token_type[0];
 }
 
 fn error(fail_message) {
-    printer.print_string("Unexpected token type: ");
     printer.print_string(fail_message);
     printer.putchar('\n');
     printer.exit(1);
     unreachable;
 }
 
-fn expect_token(expected_type, fail_message) {
-    fill_token();
+fn expect_token(expected_type, fail_message, node) {
+    fill_token(node);
     if(expected_type == token_type[0]) {
         return token_value[0];
     } else {
+        printer.print_string("Unexpected token type: ");
         error(fail_message);
         unreachable;
     }
 }
 
-fn peek_value() {
-    fill_token();
+fn peek_value(node) {
+    fill_token(node);
     return token_value[0];
 }
 
-fn discard() {
-    fill_token();
+fn discard(node) {
+    fill_token(node);
     token_type[0] = none;
 }
