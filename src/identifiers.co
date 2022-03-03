@@ -39,7 +39,7 @@ fn trie_node_next(node_ptr, idx) [tmp] {
 fn trie_node_set_next(node_ptr, idx, next) [tmp] {
     @assert(idx < max_nexts);
     tmp = node_ptr + (idx * trie_node_next_size);
-    @write32(tmp, idx);
+    @write32(tmp, next);
 }
 
 fn lookup(name, idx) [addr, chr] {
