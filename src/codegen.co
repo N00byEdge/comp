@@ -483,7 +483,7 @@ fn parse_block() [tmp] {
             tmp = break_addr[0];
             jmp_to(tmp);
         case tokenizer.keyword_unreachable:
-            break;
+            endcase;
 
         case tokenizer.keyword_endcase:
             discard();
@@ -493,7 +493,7 @@ fn parse_block() [tmp] {
             endcase_was_used[0] = 1;
             tmp = endcase_addr[0];
             jmp_to(tmp);
-            break;
+            endcase;
 
         case tokenizer.keyword_continue:
             discard();
@@ -502,7 +502,7 @@ fn parse_block() [tmp] {
 
             tmp = continue_addr[0];
             jmp_to(tmp);
-            break;
+            endcase;
 
         case tokenizer.keyword_return:
             discard();
@@ -515,7 +515,7 @@ fn parse_block() [tmp] {
             } else { }
             discard();
             function_epilogue();
-            break;
+            endcase;
         }
 
         // Loop here util we have non-dead code
