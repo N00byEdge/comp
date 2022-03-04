@@ -67,7 +67,9 @@ fn print_hex(value) [tmp] {
 }
 
 fn print_decimal(value) [tmp] {
-    tmp = (value % 10) + dec_offset;
+    tmp = value;
+    tmp %= 10;
+    tmp += dec_offset;
 
     value /= 10;
 
