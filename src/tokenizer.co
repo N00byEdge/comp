@@ -189,13 +189,13 @@ fn read_int_literal_token_decimal() [chr] {
     @write64(token_value, 0);
 
     loop {
-        token_value[0] *= 10;
         chr = source.peek(0);
         switch(chr) {
             return;
         case '0'...'9':
             source.consume(1);
             chr -= '0';
+            token_value[0] *= 10;
             token_value[0] += chr;
             continue;
         }
