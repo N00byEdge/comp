@@ -470,8 +470,11 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
 
 fn eval_comptime_expr(mode) {
     eval_expr(mode);
-    @assert(eval_type[0] == itypes.comptime_int);
-    return eval_value[0];
+    if(eval_type[0] == itypes.comptime_int) {
+        return eval_value[0];
+    } else {
+        tokenizer.error("Non-comptime expr eval!");
+    }
 }
 
 fn parse_block() [tmp] {
