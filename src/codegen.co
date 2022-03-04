@@ -85,6 +85,16 @@ fn bitwise_negate() {
     }
 }
 
+zeroes make_loop_break_ptr[8];
+
+fn make_loop_break() {
+    if(make_loop_break_ptr[0]) {
+        @call(make_loop_break_ptr[0]);
+    } else {
+        tokenizer.error("make_loop_break not implemented!");
+    }
+}
+
 fn collapse_lhs(ident) {
     switch(peek_type()) {
     case tokenizer.dot:
@@ -491,7 +501,7 @@ fn eval_comptime_expr(mode) {
     }
 }
 
-fn parse_block() [tmp] {
+fn parse_block() [tmp, save0, save1] {
     expect_token(tokenizer.open_curly_brace, "Expected `{`");
     discard();
     
@@ -530,6 +540,38 @@ fn parse_block() [tmp] {
             jmp_to(tmp);
         case tokenizer.keyword_unreachable:
             endcase;
+
+        case tokenizer.keyword_loop:
+            discard();
+
+            // Store away old values
+            tmp = @read64(break_was_used);
+            @write64(break_was_used, 0);
+
+            save0 = @read64(break_addr);
+            save1 = @read64(continue_addr);
+
+            // Create new break fixup
+            break_addr[0] = make_loop_break();
+            continue_addr[0] = writer.code_addr();
+
+            parse_block();
+
+            expect_token(tokenizer.closing_curly_brace, "Expected `}` after loop body");
+            discard();
+
+            @write64(break_addr, save0);
+            @write64(continue_addr, save1);
+
+            if(@read64(break_was_used)) {
+                @write64(break_was_used, tmp); // Restore old
+                // The code after us is used!
+                continue;
+            } else {
+                @write64(break_was_used, tmp); // Restore old
+                // The code after us cannot be reached!
+                endcase;
+            }
 
         case tokenizer.keyword_endcase:
             discard();
