@@ -564,6 +564,8 @@ fn parse_block() [tmp, save0, save1] {
             @write64(continue_addr, save1);
 
             if(@read64(break_was_used)) {
+                @todo("Patch loop break offset");
+
                 @write64(break_was_used, tmp); // Restore old
                 // The code after us is used!
                 continue;
