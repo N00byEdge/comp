@@ -209,6 +209,7 @@ fn read_stack_frame() [offset, num, ident, size] {
             if(codegen.peek_type() == tokenizer.comma) {
                 codegen.discard();
             } else {}
+            continue; // @BUG: I need this for some reason.
         }
     } else {}
 }

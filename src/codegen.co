@@ -517,6 +517,9 @@ fn parse_block() [tmp] {
             // and if so, endcase instead of continuing
             continue;
 
+        case tokenizer.keyword_case:
+            @todo("parse_block case");
+
         case tokenizer.keyword_break:
             discard();
             expect_token(tokenizer.semicolon, "Expected `;` after `break`");
