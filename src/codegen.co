@@ -255,6 +255,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value < eval_value[0];
+                    return;
                 } else {
                     @todo("eval_expr less_than 1");
                 }
@@ -269,6 +270,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value <= eval_value[0];
+                    return;
                 } else {
                     @todo("eval_expr less_than_equal 1");
                 }
@@ -283,6 +285,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value > eval_value[0];
+                    return;
                 } else {
                     @todo("eval_expr greater_than 1");
                 }
@@ -297,6 +300,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value >= eval_value[0];
+                    return;
                 } else {
                     @todo("eval_expr greater_than_equal 1");
                 }
@@ -311,6 +315,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value == eval_value[0];
+                    return;
                 } else {
                     @todo("eval_expr equals 1");
                 }
@@ -325,6 +330,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value != eval_value[0];
+                    return;
                 } else {
                     @todo("eval_expr not_equals 1");
                 }
@@ -339,6 +345,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] |= lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr bitor 1");
                 }
@@ -353,6 +360,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] ^= lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr bitxor 1");
                 }
@@ -367,6 +375,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] &= lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr bitand 1");
                 }
@@ -381,6 +390,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] /= lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr division 1");
                 }
@@ -395,6 +405,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] %= lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr modulus 1");
                 }
@@ -409,6 +420,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] *= lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr multiplication 1");
                 }
@@ -423,6 +435,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] += lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr addition 1");
                 }
@@ -437,6 +450,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] -= lhs_value;
+                    return;
                 } else {
                     @todo("eval_expr subtraction 1");
                 }
