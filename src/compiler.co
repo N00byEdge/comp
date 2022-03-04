@@ -260,6 +260,9 @@ fn parse_function() [fn_ident, root] {
     root = codegen.current_file_root[0];
     codegen.parse_block(root);
 
+    codegen.expect_token(tokenizer.closing_curly_brace, "Expected `}` after function body");
+    codegen.discard();
+
     clear_local_vars();
 }
 
