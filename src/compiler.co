@@ -232,9 +232,15 @@ fn clear_local_vars_in(node) [i, next] {
         } else {}
 
         next = idents.trie_node_next(node, i);
-        clear_local_vars_in(next);
 
         i += 1;
+
+        if(next) {
+            clear_local_vars_in(next);
+            continue;
+        } else {
+            continue;
+        }
     }
 }
 
