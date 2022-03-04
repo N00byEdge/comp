@@ -89,9 +89,9 @@ fn munmap(addr, size) {
     return @syscall(SYS_MUNMAP, addr, size);
 }
 
-fn clone(fptr, stack, flags, arg, parent_tid, tls, child_tid) {
-    return @syscall(SYS_CLONE, fptr, stack, flags, arg, parent_tid, tls, child_tid);
-}
+// fn clone(fptr, stack, flags, arg, parent_tid, tls, child_tid) {
+//     return @syscall(SYS_CLONE, fptr, stack, flags, arg, parent_tid, tls, child_tid);
+// }
 
 fn fork() {
     return @syscall(SYS_FORK);
