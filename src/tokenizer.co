@@ -178,10 +178,36 @@ fn attempt_keyword(keyword_text, keyword, node) [idx, chr] {
     }
 }
 
-fn read_int_literal_token_hex() {
+fn read_int_literal_token_hex() [chr] {
     @write64(token_type, int_literal);
     @write64(token_value, 0);
-    @todo("read_int_literal_token_hex");
+
+    loop {
+        chr = source.peek(0);
+        switch(chr) {
+            return;
+
+        case '0'...'9':
+            chr -= '0';
+
+            token_value[0] <<= 4;
+            token_value[0] += chr;
+            source.consume(1);
+            continue;
+
+        case 'a'...'f':
+            token_value[0] <<= 4;
+            token_value[0] += chr - 'a' + 0xa;
+            source.consume(1);
+            continue;
+
+        case 'A'...'F':
+            token_value[0] <<= 4;
+            token_value[0] += chr - 'A' + 0xA;
+            source.consume(1);
+            continue;
+        }
+    }
 }
 
 fn read_int_literal_token_decimal() [chr] {
