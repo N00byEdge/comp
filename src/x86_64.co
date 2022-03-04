@@ -1,0 +1,318 @@
+import "src/builtins.co" builtins;
+import "src/codegen.co" codegen;
+import "src/identifier_types.co" itypes;
+import "src/tokenizer.co" tokenizer;
+import "src/writer.co" writer;
+
+enum {
+    rax = 0,
+    rcx = 1,
+    rdx = 2,
+    rbx = 3,
+    rsp = 4,
+    rbp = 5,
+    rsi = 6,
+    rdi = 7,
+    r8  = 8,
+    r9  = 9,
+    r10 = 10,
+    r11 = 11,
+    r12 = 12,
+    r13 = 13,
+    r14 = 14,
+    r15 = 15,
+};
+
+fn code8(value) {
+    return writer.write_generic(value, writer.text, 1);
+}
+
+fn code16(value) {
+    return writer.write_generic(value, writer.text, 2);
+}
+
+fn code32(value) {
+    return writer.write_generic(value, writer.text, 4);
+}
+
+fn code64(value) {
+    return writer.write_generic(value, writer.text, 8);
+}
+
+fn make_rex(W, R, X, B) {
+    W <<= 1;
+    W |= R;
+    W <<= 1;
+    W |= X;
+    W <<= 1;
+    W |= B;
+    if(W) {
+        W |= 0x40;
+        code8(W);
+        return;
+    } else { return; }
+}
+
+fn rexw() {
+    make_rex(1, 0, 0, 0);
+}
+
+fn rexb() {
+    make_rex(0, 0, 0, 1);
+}
+
+fn modrm(mod, reg, rm) {
+    mod <<= 3;
+    mod |= reg;
+    mod <<= 3;
+    mod |= rm;
+    code8(mod);
+}
+
+fn rep() {
+    code8(0xF3);
+}
+
+fn op_size() {
+    code8(0x66);
+}
+
+fn addr_size() {
+    code8(0x67);
+}
+
+fn prefixes(opsize, regnum) {
+    @assert(regnum < 0x10);
+
+    regnum = regnum >= 8;
+
+    switch(opsize) {
+        @todo("x86_64 prefixes bad opsize");
+    case 16:
+        op_size();
+        make_rex(0, 0, 0, regnum);
+        return;
+    case 32:
+        make_rex(0, 0, 0, regnum);
+        return;
+    case 64:
+        make_rex(1, 0, 0, regnum);
+        return;
+    }
+}
+
+fn movsb() {
+    code8(0xA4);
+}
+
+fn movsw() {
+    op_size();
+    code8(0xA5);
+}
+
+fn movsd() {
+    code8(0xA5);
+}
+
+fn movsq() {
+    rexw();
+    code8(0xA5);
+}
+
+fn ret() {
+    code8(0xC3);
+}
+
+fn push_reg(regnum) {
+    prefixes(64, regnum);
+    regnum &= 0x7;
+    code8(regnum);
+}
+
+fn pop_reg(regnum) {
+    prefixes(64, regnum);
+    regnum &= 0x7;
+    regnum |= 0x58;
+    code8(regnum);
+}
+
+fn load_reg_value(regnum, value) {
+    prefixes(64, regnum);
+    regnum &= 0x7;
+    regnum |= 0xB8;
+    code8(regnum);
+    code64(value);
+
+    return 0;
+}
+
+fn jmp_to(addr) {
+    @todo("x86_64 jmp_to");
+}
+
+fn function_epilogue() {
+    // mov rsp, rbp
+    rexw();
+    code8(0x89);
+    code8(0xEC);
+
+    pop_reg(rbp);
+
+    ret();
+}
+
+fn bitwise_negate() {
+    prefixes(64, 0);
+    code8(0xF7);
+    code8(0xD0);
+}
+
+fn put_evaluated_in_reg(regnum) [value] {
+    value = @read64(codegen.eval_type);
+
+    value = @read64(codegen.eval_value);
+
+    switch(@read64(codegen.eval_type)) {
+        @todo("put_arg_in_reg default type");
+
+    case itypes.local_variable:
+        // mov reg, qword ptr [rbp - offset]
+        value = -value;
+        prefixes(64, regnum);
+        code8(0x8B);
+        regnum &= 0x7;
+        regnum <<= 3;
+        regnum += 0x85;
+        code8(regnum);
+        code32(value);
+        endcase;
+
+    case itypes.local_buffer_addr:
+        @todo("put_arg_in_reg local_buffer_addr");
+
+    case itypes.global_variable:
+        @todo("put_arg_in_reg global_variable");
+
+    case itypes.global_buffer_addr:
+        @todo("put_arg_in_reg global_buffer_addr");
+
+    case itypes.comptime_int:
+        load_reg_value(regnum, value);
+        endcase;
+
+    case itypes.function_addr:
+        @todo("put_arg_in_reg function_addr");
+
+    case itypes.runtime_int:
+        tokenizer.error("Bad expression for function parameter!");
+    }
+
+    if(codegen.peek_type() == tokenizer.comma) {
+        codegen.discard();
+    } else { }
+}
+
+fn put_arg_in_reg(regnum) {
+    codegen.eval_expr();
+    put_evaluated_in_reg(regnum);
+}
+
+fn put_opt_arg_in_reg(regnum) {
+    if(codegen.peek_type() == tokenizer.closing_paren) {
+    } else {
+        put_arg_in_reg(regnum);
+    }
+}
+
+fn store_args(num_args) {
+    // Function prologue
+    push_reg(rbp);
+
+    // mov rbp, rsp
+    code8(0x48);
+    code8(0x89);
+    code8(0xE5);
+
+    // We don't have arrays yet so this will have to do for now
+    if(num_args >= 1) {
+        push_reg(rdi);
+        if(num_args >= 2) {
+            push_reg(rsi);
+            if(num_args >= 3) {
+                push_reg(rdx);
+                if(num_args >= 4) {
+                    push_reg(rcx);
+                    if(num_args >= 5) {
+                        push_reg(r8);
+                        if(num_args >= 6) {
+                            push_reg(r9);
+                            if(num_args >= 7) {
+                                @todo("x86_64 too many args");
+                                unreachable;
+                            } else { return; }
+                        } else { return; }
+                    } else { return; }
+                } else { return; }
+            } else { return; }
+        } else { return; }
+    } else { return; }
+}
+
+fn builtin_memcpy() [tmp] {
+    put_arg_in_reg(rdi);
+    put_arg_in_reg(rsi);
+
+    codegen.eval_expr();
+
+    if(@read64(codegen.eval_type) == itypes.comptime_int) {
+        tmp = @read64(codegen.eval_value);
+        load_reg_value(rcx, tmp);
+    } else {
+        put_evaluated_in_reg(rcx);
+    }
+
+    rep();
+    movsb();
+}
+
+fn jmp_riprel8(offset) {
+    code8(0xEB);
+    code8(offset);
+}
+
+fn jmp_riprel32(offset) {
+    code8(0xE9);
+    code8(offset);
+}
+
+fn builtin_syscall() {
+    put_arg_in_reg(rax);
+    put_opt_arg_in_reg(rdi);
+    put_opt_arg_in_reg(rsi);
+    put_opt_arg_in_reg(rdx);
+    put_opt_arg_in_reg(r10);
+    put_opt_arg_in_reg(r8);
+    put_opt_arg_in_reg(r9);
+
+    code8(0x0F);
+    code8(0x05);
+}
+
+fn make_loop_break() {
+    jmp_riprel8(5); // Jump past next jmp
+
+    jmp_riprel32(0x41414141);
+
+    return writer.code_addr() - 5;
+}
+
+fn init() {
+    codegen.store_args_ptr[0] = store_args;
+    codegen.function_epilogue_ptr[0] = function_epilogue;
+    codegen.jmp_to_ptr[0] = jmp_to;
+    codegen.bitwise_negate_ptr[0] = bitwise_negate;
+    codegen.make_loop_break_ptr[0] = make_loop_break;
+
+    builtins.add_builtin("memcpy", builtin_memcpy, itypes.builtin_function_codegen);
+    builtins.add_builtin("syscall", builtin_syscall, itypes.builtin_function_codegen);
+}
