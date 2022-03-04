@@ -113,6 +113,8 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         discard();
         eval_expr(primary_expr_only);
 
+        lhs_type = eval_type[0];
+
         if(eval_type[0] == itypes.comptime_int) {
             lhs_value = ~eval_value[0];
         } else {
@@ -124,6 +126,8 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         discard();
         eval_expr(primary_expr_only);
 
+        lhs_type = eval_type[0];
+
         if(eval_type[0] == itypes.comptime_int) {
             lhs_value = -eval_value[0];
         } else {
@@ -134,6 +138,10 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
     case tokenizer.open_paren:
         discard();
         eval_expr(any_unambigous_expr);
+
+        lhs_type = eval_type[0];
+        lhs_value = eval_value[0];
+
         expect_token(tokenizer.closing_paren, "Expected `)` after expression");
         discard();
         endcase;
