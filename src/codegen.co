@@ -497,7 +497,25 @@ fn parse_block() [tmp] {
     
     loop {
         switch(peek_type()) {
-            @todo("parse_block default");
+            // Anything else is probably an expression.
+            eval_expr(any_unambigous_expr);
+
+            expect_token(tokenizer.semicolon, "Expected `;` after expression");
+            discard();
+
+            switch(eval_type[0]) {
+                // Discarding anything else is probably an error
+                tokenizer.error("Can't discard this value!");
+
+                // These are fine to discard as they could be function return values
+                // or in-place operations
+            case itypes.runtime_int:
+
+            }
+
+            // @TODO: Figure out if expression (function call) was noreturn,
+            // and if so, endcase instead of continuing
+            continue;
 
         case tokenizer.keyword_break:
             discard();
