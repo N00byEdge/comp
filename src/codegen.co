@@ -524,7 +524,7 @@ fn parse_block() [tmp] {
                 tokenizer.error("Dead code");
             case tokenizer.keyword_unreachable:
                 discard();
-                expect_token(tokenizer.keyword_unreachable, "Expected `;` after `unreachable`");
+                expect_token(tokenizer.semicolon, "Expected `;` after `unreachable`");
                 continue;
 
             case tokenizer.keyword_case:
