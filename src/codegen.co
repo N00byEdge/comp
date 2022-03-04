@@ -559,27 +559,28 @@ fn parse_block() [tmp] {
             discard();
             function_epilogue();
             endcase;
+
+        case tokenizer.closing_curly_brace:
+            return;
         }
 
-        // Loop here util we have non-dead code
+        // Loop here util we have non-dead code (case comes around and enters here or we exit scope)
         loop {
             switch(peek_type()) {
                 tokenizer.error("Dead code");
+
             case tokenizer.keyword_unreachable:
                 discard();
                 expect_token(tokenizer.semicolon, "Expected `;` after `unreachable`");
+                discard();
                 continue;
 
             case tokenizer.keyword_case:
-            case tokenizer.closing_curly_brace:
                 break;
-            }
-        }
 
-        if(peek_type() == tokenizer.closing_curly_brace) {
-            return;
-        } else {
-            continue;
+            case tokenizer.closing_curly_brace:
+                return;
+            }
         }
     }
 }
