@@ -478,6 +478,7 @@ fn else_block_end(jmp_end_fixup) {
 }
 
 fn do_assignment(lhs_type, lhs_value) {
+    // Todo: optimize for comptime known value
     put_evaluated_in_reg(rax);
 
     switch(lhs_type) {
@@ -501,6 +502,7 @@ fn do_assignment(lhs_type, lhs_value) {
 }
 
 fn do_inplace_add(lhs_type, lhs_value) {
+    // Todo: optimize for comptime known value
     put_evaluated_in_reg(rax);
 
     switch(lhs_type) {
@@ -516,6 +518,7 @@ fn do_inplace_add(lhs_type, lhs_value) {
 }
 
 fn do_inplace_sub(lhs_type, lhs_value) {
+    // Todo: optimize for comptime known value
     put_evaluated_in_reg(rax);
 
     switch(lhs_type) {
@@ -531,6 +534,7 @@ fn do_inplace_sub(lhs_type, lhs_value) {
 }
 
 fn do_inplace_bitand(lhs_type, lhs_value) {
+    // Todo: optimize for comptime known value
     put_evaluated_in_reg(rax);
 
     switch(lhs_type) {
