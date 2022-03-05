@@ -105,18 +105,54 @@ fn movsb() {
     code8(0xA4);
 }
 
+fn stosb() {
+    code8(0xAA);
+}
+
+fn lodsb() {
+    code8(0xAC);
+}
+
 fn movsw() {
     op_size();
     code8(0xA5);
+}
+
+fn stosw() {
+    op_size();
+    code8(0xAB);
+}
+
+fn lodsw() {
+    op_size();
+    code8(0xAD);
 }
 
 fn movsd() {
     code8(0xA5);
 }
 
+fn stosd() {
+    code8(0xAB);
+}
+
+fn lodsd() {
+    code8(0xAD);
+}
+
 fn movsq() {
     rexw();
     code8(0xA5);
+}
+
+fn stosq() {
+    rexw();
+    code8(0xAB);
+}
+
+fn lodsq() {
+    rexw();
+    code8(0xAD);
 }
 
 fn ret() {
