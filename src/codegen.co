@@ -311,48 +311,48 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         discard();
 
         switch(lhs_type) {
-                lhs_value = idents.node_get_value(lhs_value);
-                endcase;
+            lhs_value = idents.node_get_value(lhs_value);
+            endcase;
 
-            case itypes.none:
-                tokenizer.error("Unknown identifier!");
+        case itypes.none:
+            tokenizer.error("Unknown identifier!");
 
-            case itypes.local_buffer:
-                lhs_type = itypes.local_buffer_addr;
-                lhs_value = idents.node_get_value(lhs_value);
-                endcase;
+        case itypes.local_buffer:
+            lhs_type = itypes.local_buffer_addr;
+            lhs_value = idents.node_get_value(lhs_value);
+            endcase;
 
-            case itypes.global_buffer:
-                lhs_type = itypes.global_buffer_addr;
-                lhs_value = idents.node_get_value(lhs_value);
-                endcase;
+        case itypes.global_buffer:
+            lhs_type = itypes.global_buffer_addr;
+            lhs_value = idents.node_get_value(lhs_value);
+            endcase;
 
-            case itypes.variable_scope:
-                lhs_value = idents.node_get_attribute(lhs_value);
+        case itypes.variable_scope:
+            lhs_value = idents.node_get_attribute(lhs_value);
 
-                loop {
-                    if(peek_type() == tokenizer.dot) {
-                        discard();
+            loop {
+                if(peek_type() == tokenizer.dot) {
+                    discard();
 
-                        lhs_value = tokenizer.expect_token(tokenizer.identifier, "Expected identifier after `.`", lhs_value);
-                        discard();
+                    lhs_value = tokenizer.expect_token(tokenizer.identifier, "Expected identifier after `.`", lhs_value);
+                    discard();
 
-                        lhs_type = idents.node_get_type(lhs_value);
+                    lhs_type = idents.node_get_type(lhs_value);
 
-                        switch(lhs_type) {
-                            break;
-                        case itypes.none:
-                            tokenizer.error("Unknown identifier!");
-                        case itypes.variable_scope:
-                            lhs_value = idents.node_get_attribute(lhs_value);
-                            continue;
-                        }
-                    } else {
+                    switch(lhs_type) {
                         break;
+                    case itypes.none:
+                        tokenizer.error("Unknown identifier!");
+                    case itypes.variable_scope:
+                        lhs_value = idents.node_get_attribute(lhs_value);
+                        continue;
                     }
+                } else {
+                    break;
                 }
+            }
 
-                endcase;
+            // endcase;
         }
 
         switch(peek_type()) {
