@@ -70,7 +70,7 @@ fn set_source_file(file_path) [fd] {
     source.switch_file(fd);
 }
 
-fn parse_additional_file(file_path, new_node) [fd, root_stash, file_context_stash[source.file_context_size]] {
+fn parse_additional_file(file_path, new_node) [fd, root_stash, file_context_stash[source.file_context_size], new_file_root] {
     // Store our current context, the imported file has no idea!
     root_stash = codegen.current_file_root[0];
     source.stash_file_info(file_context_stash);
@@ -79,12 +79,16 @@ fn parse_additional_file(file_path, new_node) [fd, root_stash, file_context_stas
 
     @call(parse_top_level_ptr[0]);
 
+    new_file_root = codegen.current_file_root[0];
+
     // Return to monke
     source.restore_file_info(file_context_stash);
     codegen.current_file_root[0] = root_stash;
+
+    return new_file_root;
 }
 
-fn parse_file_if_needed(file_path) [node] {
+fn parse_file_if_needed(file_path) [node, new_file_root] {
     node = import_file_root[0];
     node = idents.lookup(file_path, node);
 
@@ -97,10 +101,10 @@ fn parse_file_if_needed(file_path) [node] {
 
         idents.node_set_type(node, itypes.partially_parsed_filename);
 
-        parse_additional_file(file_path, node);
+        new_file_root = parse_additional_file(file_path, node);
 
         idents.node_set_type(node, itypes.fully_parsed_filename);
-        return idents.node_get_attribute(node);
+        return new_file_root;
 
     case itypes.fully_parsed_filename:
         printer.print_string("File already parsed, nothing to do\n");
