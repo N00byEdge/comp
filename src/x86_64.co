@@ -364,7 +364,7 @@ fn jmp_riprel8(offset) {
 
 fn jmp_riprel32(offset) {
     code8(0xE9);
-    code8(offset);
+    code32(offset);
 }
 
 fn builtin_syscall() {
