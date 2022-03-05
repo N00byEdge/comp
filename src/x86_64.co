@@ -525,6 +525,7 @@ fn less_than_runtime(lhs_type, lhs_value) {
         // setb al
         code8(0x0F);
         code8(0x92);
+        code8(0xC0);
 
         // movzx rax, al
         rexw();
