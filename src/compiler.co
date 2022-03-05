@@ -141,20 +141,18 @@ fn add_builtins_to_current_file() [node, builtin_root] {
 
 // Parse function argument and local variable list, creating identifiers
 // and storing the argument values in their stack slots
-fn read_stack_frame() [offset, num, ident, size] {
+fn read_stack_frame() [offset, num_args, local_var_space, ident, size] {
     offset = 0;
+    num_args = 0;
+    local_var_space = 0;
 
     if(codegen.peek_type() == tokenizer.open_paren) {
         codegen.discard();
         // Parse argument list
-        num = 0;
 
         loop {
             if(codegen.peek_type() == tokenizer.closing_paren) {
                 codegen.discard();
-                if(num) {
-                    codegen.store_args(num);
-                } else {}
                 break;
             } else {
                 ident = codegen.expect_token(tokenizer.identifier, "Expected identifier or `)`");
@@ -167,7 +165,7 @@ fn read_stack_frame() [offset, num, ident, size] {
 
                 idents.node_set_value(ident, offset);
 
-                num += 1;
+                num_args += 1;
             }
 
             if(codegen.peek_type() == tokenizer.comma) {
@@ -195,12 +193,14 @@ fn read_stack_frame() [offset, num, ident, size] {
                     idents.node_set_type(ident, itypes.local_buffer);
                     size = codegen.eval_comptime_expr(codegen.any_unambigous_expr);
 
+                    local_var_space += size;
                     offset += size;
                     idents.node_set_value(ident, offset);
                     idents.node_set_attribute(ident, size);
                 } else {
                     idents.node_set_type(ident, itypes.local_variable);
 
+                    local_var_space += 8;
                     offset += 8;
                     idents.node_set_value(ident, offset);
                 }
@@ -212,6 +212,8 @@ fn read_stack_frame() [offset, num, ident, size] {
             continue; // @BUG: I need this for some reason.
         }
     } else {}
+
+    codegen.function_prologue(num_args, local_var_space, offset);
 }
 
 fn clear_local_vars_in(node) [i, next] {

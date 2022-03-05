@@ -45,23 +45,23 @@ zeroes endcase_was_used[8];
 zeroes parse_top_level_ptr[8];
 // TODO
 
-zeroes store_args_ptr[8];
+zeroes function_prologue_ptr[8];
 
-fn store_args(num_args) {
-    if(store_args_ptr[0]) {
-        @call(store_args_ptr[0], num_args);
+fn function_prologue(num_args, local_var_space, total_stack_space) {
+    if(function_prologue_ptr[0]) {
+        @call(function_prologue_ptr[0], num_args);
     } else {
-        tokenizer.error("store_args not implemented!");
+        tokenizer.error("function_prologue not implemented!");
     }
 }
 
-zeroes function_epilogue_ptr[8];
+zeroes return_evaluated_ptr[8];
 
-fn function_epilogue() {
-    if(function_epilogue_ptr[0]) {
-        @call(function_epilogue_ptr[0]);
+fn return_evaluated() {
+    if(return_evaluated_ptr[0]) {
+        @call(return_evaluated_ptr[0]);
     } else {
-        tokenizer.error("function_epilogue not implemented!");
+        tokenizer.error("return_evaluated not implemented!");
     }
 }
 
@@ -94,6 +94,137 @@ fn make_loop_break() {
         tokenizer.error("make_loop_break not implemented!");
     }
 }
+
+zeroes if_condition_ptr[8];
+
+fn if_condition() {
+    if(if_condition_ptr[0]) {
+        @call(if_condition_ptr[0]);
+    } else {
+        tokenizer.error("if_condition not implemented!");
+    }
+}
+
+zeroes else_block_start_ptr[8];
+
+fn else_block_start() {
+    if(else_block_start_ptr[0]) {
+        @call(else_block_start_ptr[0]);
+    } else {
+        tokenizer.error("else_block_start not implemented!");
+    }
+}
+
+zeroes else_block_end_ptr[8];
+
+fn else_block_end() {
+    if(else_block_end_ptr[0]) {
+        @call(else_block_end_ptr[0]);
+    } else {
+        tokenizer.error("else_block_end not implemented!");
+    }
+}
+
+zeroes no_else_block_ptr[8];
+
+fn no_else_block() {
+    if(no_else_block_ptr[0]) {
+        @call(no_else_block_ptr[0]);
+    } else {
+        tokenizer.error("no_else_block not implemented!");
+    }
+}
+
+zeroes save_eval_value_ptr[8];
+
+fn save_eval_value() {
+    if(save_eval_value_ptr[0]) {
+        @call(save_eval_value_ptr[0]);
+    } else {
+        tokenizer.error("save_eval_value not implemented!");
+    }
+}
+
+zeroes discard_eval_value_ptr[8];
+
+fn discard_eval_value() {
+    if(discard_eval_value_ptr[0]) {
+        @call(discard_eval_value_ptr[0]);
+    } else {
+        tokenizer.error("discard_eval_value not implemented!");
+    }
+}
+
+zeroes equals_runtime_comptime_ptr[8];
+
+fn equals_runtime_comptime(runtime_type, runtime_value, comptime_value) {
+    if(equals_runtime_comptime_ptr[0]) {
+        @call(equals_runtime_comptime_ptr[0], runtime_type, runtime_value, comptime_value);
+    } else {
+        tokenizer.error("equals_runtime_comptime not implemented!");
+    }
+}
+
+zeroes do_assignment_ptr[8];
+
+fn do_assignment(lhs_type, lhs_value) {
+    if(do_assignment_ptr[0]) {
+        @call(do_assignment_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_assignment not implemented!");
+    }
+}
+
+zeroes do_inplace_add_ptr[8];
+
+fn do_inplace_add(lhs_type, lhs_value) {
+    if(do_inplace_add_ptr[0]) {
+        @call(do_inplace_add_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_inplace_add not implemented!");
+    }
+}
+
+zeroes do_inplace_sub_ptr[8];
+
+fn do_inplace_sub(lhs_type, lhs_value) {
+    if(do_inplace_sub_ptr[0]) {
+        @call(do_inplace_sub_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_inplace_sub not implemented!");
+    }
+}
+
+zeroes do_inplace_bitand_ptr[8];
+
+fn do_inplace_bitand(lhs_type, lhs_value) {
+    if(do_inplace_bitand_ptr[0]) {
+        @call(do_inplace_bitand_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_inplace_bitand not implemented!");
+    }
+}
+
+zeroes equals_runtime_ptr[8];
+
+fn equals_runtime(lhs_type, lhs_value, rhs_type, rhs_value) {
+    if(equals_runtime_ptr[0]) {
+        @call(equals_runtime_ptr[0], lhs_type, lhs_value, rhs_type, rhs_value);
+    } else {
+        tokenizer.error("equals_runtime not implemented!");
+    }
+}
+
+zeroes less_than_runtime_ptr[8];
+
+fn less_than_runtime(lhs_type, lhs_value, rhs_type, rhs_value) {
+    if(less_than_runtime_ptr[0]) {
+        @call(less_than_runtime_ptr[0], lhs_type, lhs_value, rhs_type, rhs_value);
+    } else {
+        tokenizer.error("less_than_runtime not implemented!");
+    }
+}
+
 
 fn collapse_lhs(ident) {
     switch(peek_type()) {
@@ -258,11 +389,68 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         case tokenizer.dot_dot_dot:
             return;
 
+        case tokenizer.assignment:
+            discard();
+
+            switch(lhs_type) {
+                tokenizer.error("Invalid lhs for in-place op");
+
+            case itypes.local_variable:
+            case itypes.global_variable:
+                eval_expr(primary_expr_only);
+                do_assignment(lhs_type, lhs_value);
+                eval_type[0] = itypes.runtime_int;
+                return;
+            }
+
+        case tokenizer.addition_inplace:
+            discard();
+
+            switch(lhs_type) {
+                tokenizer.error("Invalid lhs for in-place op");
+
+            case itypes.local_variable:
+            case itypes.global_variable:
+                eval_expr(primary_expr_only);
+                do_inplace_add(lhs_type, lhs_value);
+                eval_type[0] = itypes.runtime_int;
+                return;
+            }
+
+        case tokenizer.subtraction_inplace:
+            discard();
+
+            switch(lhs_type) {
+                tokenizer.error("Invalid lhs for in-place op");
+
+            case itypes.local_variable:
+            case itypes.global_variable:
+                eval_expr(primary_expr_only);
+                do_inplace_sub(lhs_type, lhs_value);
+                eval_type[0] = itypes.runtime_int;
+                return;
+            }
+
+        case tokenizer.bitand_inplace:
+            discard();
+
+            switch(lhs_type) {
+                tokenizer.error("Invalid lhs for in-place op");
+
+            case itypes.local_variable:
+            case itypes.global_variable:
+                eval_expr(primary_expr_only);
+                do_inplace_bitand(lhs_type, lhs_value);
+                eval_type[0] = itypes.runtime_int;
+                return;
+            }
+
         case tokenizer.less_than:
             discard();
-            eval_expr(primary_expr_only);
 
             if(lhs_type == itypes.comptime_int) {
+                eval_expr(primary_expr_only);
+
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value < eval_value[0];
                     return;
@@ -270,7 +458,19 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
                     @todo("eval_expr less_than 1");
                 }
             } else {
-                @todo("eval_expr less_than 2");
+                if(lhs_type == itypes.runtime_int) {
+                    save_eval_value();
+                } else {}
+
+                eval_expr(primary_expr_only);
+
+                if(eval_type[0] == itypes.comptime_int) {
+                    @todo("eval_expr less_than 2");
+                } else {
+                    less_than_runtime(lhs_type, lhs_value);
+                    eval_type[0] = itypes.runtime_int;
+                    return;
+                }
             }
 
         case tokenizer.less_than_equal:
@@ -320,17 +520,42 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
 
         case tokenizer.equals:
             discard();
-            eval_expr(primary_expr_only);
 
             if(lhs_type == itypes.comptime_int) {
+                eval_expr(primary_expr_only);
+
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] = lhs_value == eval_value[0];
                     return;
                 } else {
-                    @todo("eval_expr equals 1");
+                    rhs_type = eval_type[0];
+                    rhs_value = eval_value[0];
+                    equals_runtime_comptime(rhs_type, rhs_value, lhs_value);
+                    eval_type[0] = itypes.runtime_int;
+                    return;
                 }
             } else {
-                @todo("eval_expr equals 2");
+                if(lhs_type == itypes.runtime_int) {
+                    save_eval_value();
+                } else {}
+
+                eval_expr(primary_expr_only);
+
+                rhs_type = eval_type[0];
+                rhs_value = eval_value[0];
+
+                if(eval_type[0] == itypes.comptime_int) {
+                    if(lhs_type == itypes.runtime_int) {
+                        discard_eval_value();
+                    } else {}
+                    equals_runtime_comptime(lhs_type, lhs_value, rhs_value);
+                    eval_type[0] = itypes.runtime_int;
+                    return;
+                } else {
+                    equals_runtime(lhs_type, lhs_value, rhs_type, rhs_value);
+                    eval_type[0] = itypes.runtime_int;
+                    return;
+                }
             }
 
         case tokenizer.not_equals:
@@ -575,6 +800,51 @@ fn parse_block() [tmp, save0, save1] {
                 endcase;
             }
 
+        case tokenizer.keyword_if:
+            discard();
+            expect_token(tokenizer.open_paren, "Expected `(` after `if`");
+            discard();
+
+            eval_expr(any_unambigous_expr);
+
+            if(eval_type[0] == itypes.comptime_int) {
+                @todo("comptime if");
+            } else {
+                expect_token(tokenizer.closing_paren, "Expected `)` after if conditional");
+                discard();
+
+                tmp = if_condition();
+
+                parse_block();
+
+                expect_token(tokenizer.closing_curly_brace, "Expected `}` after if body");
+                discard();
+
+                if(peek_type() == tokenizer.keyword_else) {
+                    discard();
+
+                    // Jump at the end of the taken branch to after else
+                    save0 = else_block_start(tmp);
+
+                    parse_block();
+
+                    expect_token(tokenizer.closing_curly_brace, "Expected `}` after else body");
+                    discard();
+
+                    // Else falls through
+
+                    // Patch end of taken jmp to here
+                    else_block_end(save0);
+                } else {
+                    no_else_block(tmp);
+                }
+
+                // @TODO: Check which of the branches can exit the scopes, and do `endcase;` depending
+                // on if both can
+                continue;
+            }
+
+
         case tokenizer.keyword_endcase:
             discard();
             expect_token(tokenizer.semicolon, "Expected `;` after `endcase`");
@@ -598,13 +868,13 @@ fn parse_block() [tmp, save0, save1] {
             discard();
             if(peek_type() != tokenizer.semicolon) {
                 eval_expr();
-                if(eval_type[0] == itypes.comptime_int) {
-                    @todo("codegen comptime int");
-                } else { }
                 expect_token(tokenizer.semicolon, "Expected `;` after `return` statment");
-            } else { }
-            discard();
-            function_epilogue();
+                discard();
+            } else {
+                // This should make the backend not produce any code *crosses fingers*
+                eval_type[0] = itypes.runtime_int;
+            }
+            return_evaluated();
             endcase;
 
         case tokenizer.closing_curly_brace:

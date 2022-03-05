@@ -35,6 +35,12 @@ fn section_addr(section) {
     return section_base_addrs[section * 8] + current_section_bytes[section * 8];
 }
 
+fn patch32(value, section, addr) {
+    addr -= section_base_addrs[section * 8];
+    addr += current_section_buf[section * 8];
+    @write32(addr, value);
+}
+
 fn write_generic(value, section, num_bytes) [ptr] {
     if(section != bss) {
         ptr = current_section_buf[section * 8] + section_offset(section);

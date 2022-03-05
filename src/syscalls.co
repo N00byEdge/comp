@@ -105,17 +105,17 @@ fn exit(exit_code) {
 // Wrapper around write() to call it over and over until the entire buffer is written
 fn write_all(fd, buf, num) [num_written] {
     loop {
-        if(num == 0) {
-            return 0;
-        } else {
+        if(num) {
             num_written = @syscall(SYS_WRITE, fd, buf, num);
-            if(num_written > num) {
+            if(num < num_written) {
                 return 1;
             } else {
                 num -= num_written;
                 buf += num_written;
                 continue;
             }
+        } else {
+            return 0;
         }
     }
 }
@@ -123,17 +123,17 @@ fn write_all(fd, buf, num) [num_written] {
 // Wrapper around read() to call it over and over until the entire buffer is read
 fn read_all(fd, buf, num) [num_read] {
     loop {
-        if(num == 0) {
-            return 0;
-        } else {
+        if(num) {
             num_read = @syscall(SYS_READ, fd, buf, num);
-            if(num_read > num) {
+            if(num < num_read) {
                 return 1;
             } else {
                 num -= num_read;
                 buf += num_read;
                 continue;
             }
+        } else {
+            return 0;
         }
     }
 }
