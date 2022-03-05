@@ -328,9 +328,8 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             endcase;
 
         case itypes.variable_scope:
-            lhs_value = idents.node_get_attribute(lhs_value);
-
             loop {
+                lhs_value = idents.node_get_attribute(lhs_value);
                 if(peek_type() == tokenizer.dot) {
                     discard();
 
@@ -344,7 +343,6 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
                     case itypes.none:
                         tokenizer.error("Unknown identifier!");
                     case itypes.variable_scope:
-                        lhs_value = idents.node_get_attribute(lhs_value);
                         continue;
                     }
                 } else {
