@@ -232,7 +232,12 @@ fn put_evaluated_in_reg(regnum) [value] {
         @todo("put_evaluated_in_reg local_buffer_addr");
 
     case itypes.global_variable:
-        @todo("put_evaluated_in_reg global_variable");
+        // mov rax, qword ptr [rel glob]
+        rexw();
+        code8(0x8B);
+        code8(0x05);
+        ref_riprel32(value, 0);
+        return;
 
     case itypes.global_buffer_addr:
         // lea reg, [rel global]
