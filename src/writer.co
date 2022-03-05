@@ -49,6 +49,25 @@ fn write_generic(value, section, num_bytes) [ptr] {
     current_section_bytes[section * 8] += num_bytes;
 }
 
+fn write_string(ptr, len, section) [retval, tmp] {
+    retval = section_addr(section);
+    loop {
+        if(len) {
+            tmp = @read8(ptr);
+            write_generic(tmp, section, 1);
+            len -= 1;
+            continue;
+        } else {
+            return retval;
+        }
+    }
+}
+
+fn intern_string(ptr, len, section) {
+    // TODO: Actually find an intern
+    return write_string(ptr, len, section);
+}
+
 fn code_offset() {
     return section_offset(text);
 }

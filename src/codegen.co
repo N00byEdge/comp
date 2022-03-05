@@ -294,7 +294,15 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
         endcase;
 
     case tokenizer.string_literal:
-        @todo("eval_expr strlit");
+        discard();
+
+        // Length, include null terminator
+        lhs_value = peek_value() + 1;
+
+        lhs_value = writer.intern_string(tokenizer.buffer, lhs_value, writer.rodata);
+        lhs_type = itypes.global_buffer_addr;
+
+        endcase;
 
     case tokenizer.identifier:
         lhs_value = peek_value();
