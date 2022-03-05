@@ -939,13 +939,13 @@ fn parse_block() [tmp, save0, save1] {
             discard();
             if(peek_type() != tokenizer.semicolon) {
                 eval_expr();
-                expect_token(tokenizer.semicolon, "Expected `;` after `return` statment");
-                discard();
             } else {
                 // This should make the backend not produce any code *crosses fingers*
                 eval_type[0] = itypes.runtime_int;
             }
             return_evaluated();
+            expect_token(tokenizer.semicolon, "Expected `;` after `return` statment");
+            discard();
             endcase;
 
         case tokenizer.closing_curly_brace:
