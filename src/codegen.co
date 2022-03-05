@@ -335,7 +335,33 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             endcase;
 
         case tokenizer.open_square_bracket:
-            @todo("ident square bracket");
+            discard();
+
+            eval_expr(any_unambigous_expr);
+
+            switch(eval_type[0]) {
+                @todo("ident square bracket default");
+
+            case itypes.comptime_int:
+                switch(lhs_type) {
+                    @todo("ident square bracket comptime_int default");
+                case itypes.local_buffer_addr:
+                    lhs_type = itypes.local_variable;
+                    lhs_value += eval_value[0];
+                    endcase;
+
+                case itypes.global_buffer_addr:
+                    lhs_type = itypes.global_variable;
+                    lhs_value += eval_value[0];
+
+                    //endcase;
+                }
+                // endcase;
+            }
+
+            tokenizer.expect_token(tokenizer.closing_square_bracket, "Expected `]` after subscript index");
+            tokenizer.discard();
+            endcase;
 
         case tokenizer.open_paren:
             discard();
