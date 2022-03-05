@@ -508,6 +508,14 @@ fn do_inplace_add(lhs_type, lhs_value) {
     switch(lhs_type) {
         @todo("x86_64 inplace_add default");
 
+    case itypes.global_variable:
+        // add [rel glob], rax
+        rexw();
+        code8(0x01);
+        code8(0x05);
+        ref_riprel32(lhs_value, 0);
+        return;
+
     case itypes.local_variable:
         // add [rbp - offset], rax
         rexw();
