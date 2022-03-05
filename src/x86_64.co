@@ -640,6 +640,53 @@ fn equals_runtime_comptime(runtime_type, runtime_value, comptime_value) {
     }
 }
 
+fn builtin_write8() {
+    put_arg_in_reg(rdi);
+    put_arg_in_reg(rax);
+    stosb();
+}
+
+fn builtin_write16() {
+    put_arg_in_reg(rdi);
+    put_arg_in_reg(rax);
+    stosw();
+}
+
+fn builtin_write32() {
+    put_arg_in_reg(rdi);
+    put_arg_in_reg(rax);
+    stosd();
+}
+
+fn builtin_write64() {
+    put_arg_in_reg(rdi);
+    put_arg_in_reg(rax);
+    stosq();
+}
+
+fn builtin_read8() {
+    put_arg_in_reg(rdi);
+    load_reg_value(rax, 0); // Clear upper bits
+    lodsb();
+}
+
+fn builtin_read16() {
+    put_arg_in_reg(rdi);
+    load_reg_value(rax, 0); // Clear upper bits
+    lodsw();
+}
+
+fn builtin_read32() {
+    put_arg_in_reg(rdi);
+    load_reg_value(rax, 0); // Clear upper bits
+    lodsd();
+}
+
+fn builtin_read64() {
+    put_arg_in_reg(rdi);
+    lodsq();
+}
+
 fn init() {
     // Function prologue and epilogue
     codegen.function_prologue_ptr[0] = function_prologue;
@@ -668,4 +715,14 @@ fn init() {
 
     builtins.add_builtin("memcpy", builtin_memcpy, itypes.builtin_function_codegen);
     builtins.add_builtin("syscall", builtin_syscall, itypes.builtin_function_codegen);
+
+    builtins.add_builtin("write8", builtin_write8, itypes.builtin_function_codegen);
+    builtins.add_builtin("write16", builtin_write16, itypes.builtin_function_codegen);
+    builtins.add_builtin("write32", builtin_write32, itypes.builtin_function_codegen);
+    builtins.add_builtin("write64", builtin_write64, itypes.builtin_function_codegen);
+
+    builtins.add_builtin("read8", builtin_read8, itypes.builtin_function_codegen);
+    builtins.add_builtin("read16", builtin_read16, itypes.builtin_function_codegen);
+    builtins.add_builtin("read32", builtin_read32, itypes.builtin_function_codegen);
+    builtins.add_builtin("read64", builtin_read64, itypes.builtin_function_codegen);
 }
