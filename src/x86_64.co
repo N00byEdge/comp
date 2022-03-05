@@ -126,6 +126,7 @@ fn ret() {
 fn push_reg(regnum) {
     prefixes(64, regnum);
     regnum &= 0x7;
+    regnum |= 0x50;
     code8(regnum);
 }
 
