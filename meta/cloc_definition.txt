@@ -1,0 +1,4 @@
+Comp
+    filter remove_matches ^\s*//
+    extension co
+    3rd_gen_scale 1.8
