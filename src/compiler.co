@@ -257,11 +257,15 @@ fn clear_local_vars() [node] {
     clear_local_vars_in(node);
 }
 
-fn parse_function() [fn_ident, root] {
+fn parse_function() [fn_ident, root, fn_addr] {
     codegen.discard();
 
     fn_ident = codegen.expect_token(tokenizer.identifier, "Expected identifier after `fn`");
     codegen.discard();
+
+    fn_addr = writer.code_addr();
+    idents.node_set_type(fn_ident, itypes.function_addr);
+    idents.node_set_value(fn_ident, fn_addr);
 
     read_stack_frame();
 
