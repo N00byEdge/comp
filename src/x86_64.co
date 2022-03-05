@@ -586,6 +586,24 @@ fn less_than_runtime(lhs_type, lhs_value) {
     }
 }
 
+fn equals_runtime_comptime(runtime_type, runtime_value, comptime_value) {
+    switch(runtime_type) {
+        @todo("x86_64 equals_runtime_comptime default");
+    case itypes.local_variable:
+        @todo("x86_64 equals_runtime_comptime local_variable");
+    case itypes.global_variable:
+        if(comptime_value < 0x80000000) { // 32 bit value, TODO: negative values too(?)
+            rexw();
+            code8(0x81);
+            code8(0x3D);
+            ref_riprel32(runtime_value, 4);
+            code32(comptime_value);
+        } else {
+            @todo("x86_64 equals_runtime_comptime global_variable large");
+        }
+    }
+}
+
 fn init() {
     // Function prologue and epilogue
     codegen.function_prologue_ptr[0] = function_prologue;
@@ -607,6 +625,7 @@ fn init() {
 
     // Arith ops
     codegen.less_than_runtime_ptr[0] = less_than_runtime;
+    codegen.equals_runtime_comptime_ptr[0] = equals_runtime_comptime;
 
     // Unary ops
     codegen.bitwise_negate_ptr[0] = bitwise_negate;
