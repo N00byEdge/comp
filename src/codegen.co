@@ -329,6 +329,26 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
 
             case itypes.variable_scope:
                 lhs_value = idents.node_get_attribute(lhs_value);
+
+                loop {
+                    if(peek_type() == tokenizer.dot) {
+                        discard();
+
+                        lhs_value = tokenizer.expect_token(tokenizer.identifier, "Expected identifier after `.`", lhs_value);
+                        discard();
+
+                        lhs_type = idents.node_get_type(lhs_value);
+
+                        if(lhs_type == itypes.variable_scope) {
+                            lhs_value = idents.node_get_attribute(lhs_value);
+                            continue;
+                        } else {
+                            endcase;
+                        }
+                    } else {
+                        endcase;
+                    }
+                }
         }
 
         switch(peek_type()) {
