@@ -270,6 +270,37 @@ fn parse_function() [fn_ident, root] {
     clear_local_vars();
 }
 
+fn parse_zeroes() [ident, tmp] {
+    codegen.discard();
+
+    ident = codegen.expect_token(tokenizer.identifier, "Expected identifier after `zeroes`");
+    codegen.discard();
+
+    tmp = writer.section_addr(writer.bss);
+    idents.node_set_value(ident, tmp);
+
+    if(codegen.peek_type() == tokenizer.open_square_bracket) {
+        idents.node_set_type(ident, itypes.global_buffer);
+
+        codegen.discard();
+
+        tmp = codegen.eval_comptime_expr();
+
+        codegen.expect_token(tokenizer.closing_square_bracket, "Expected `]` after zeroes decl size");
+        codegen.discard();
+
+        writer.write_generic(0, writer.bss, tmp);
+
+        idents.node_set_attribute(ident, tmp);
+    } else {
+        idents.node_set_type(ident, itypes.global_variable);
+        writer.write_generic(0, writer.bss, 8);
+    }
+
+    codegen.expect_token(tokenizer.semicolon, "Expected `;` after zeroes declaration");
+    codegen.discard();
+}
+
 fn parse_top_level() {
     printer.print_string("Top level!\n");
     codegen.current_file_root[0] = idents.alloc();
@@ -284,7 +315,8 @@ fn parse_top_level() {
             return;
 
         case tokenizer.keyword_zeroes:
-            @todo("parse_top_level zeroes");
+            parse_zeroes();
+            continue;
 
         case tokenizer.keyword_fn:
             parse_function();
