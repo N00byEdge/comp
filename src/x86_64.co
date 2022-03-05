@@ -152,12 +152,15 @@ fn write_riprel32_to_here(code_addr) [rip_at_jmp, rel] {
     writer.patch32(rel, writer.text, code_addr);
 }
 
-fn jmp_to(addr) {
-    addr -= writer.code_addr() + 5;
+fn ref_riprel32(addr) {
+    addr -= writer.code_addr() + 4;
+    code32(addr);
+}
 
+fn jmp_to(addr) {
     // jmp imm32
     code8(0xE9);
-    code32(addr);
+    ref_riprel32(addr);
 }
 
 fn return_evaluated() [value] {
@@ -212,8 +215,6 @@ fn rmimm_neg_offset_regs(offset, mem_reg, other_reg) {
 }
 
 fn put_evaluated_in_reg(regnum) [value] {
-    value = @read64(codegen.eval_type);
-
     value = @read64(codegen.eval_value);
 
     switch(@read64(codegen.eval_type)) {
@@ -233,7 +234,12 @@ fn put_evaluated_in_reg(regnum) [value] {
         @todo("put_evaluated_in_reg global_variable");
 
     case itypes.global_buffer_addr:
-        @todo("put_evaluated_in_reg global_buffer_addr");
+        // lea reg, [rel global]
+        prefixes(64, regnum);
+        code8(0x8D);
+        code8(0x05);
+        ref_riprel32(value);
+        return;
 
     case itypes.comptime_int:
         load_reg_value(regnum, value);
