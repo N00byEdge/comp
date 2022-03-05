@@ -153,15 +153,15 @@ fn write_riprel32_to_here(code_addr) [rip_at_jmp, rel] {
     writer.patch32(rel, writer.text, code_addr);
 }
 
-fn ref_riprel32(addr) {
-    addr -= writer.code_addr() + 4;
+fn ref_riprel32(addr, extra_offset) {
+    addr -= writer.code_addr() + 4 + extra_offset;
     code32(addr);
 }
 
 fn jmp_to(addr) {
     // jmp imm32
     code8(0xE9);
-    ref_riprel32(addr);
+    ref_riprel32(addr, 0);
 }
 
 fn return_evaluated() [value] {
@@ -239,7 +239,7 @@ fn put_evaluated_in_reg(regnum) [value] {
         prefixes(64, regnum);
         code8(0x8D);
         code8(0x05);
-        ref_riprel32(value);
+        ref_riprel32(value, 0);
         return;
 
     case itypes.comptime_int:
@@ -413,7 +413,19 @@ fn if_condition() [value] {
         return writer.code_addr() - 4;
 
     case itypes.global_variable:
-        @todo("x86_64 if condition global_variable");
+        // cmp qword ptr [rel glob], 0
+        rexw();
+        code8(0x83);
+        code8(0x3D);
+        ref_riprel32(value, 1);
+        code8(0);
+
+        // je else_case
+        code8(0x0F);
+        code8(0x84);
+        code32(0x41414141);
+
+        return writer.code_addr() - 4;
 
     case itypes.runtime_int:
         // test rax, rax
