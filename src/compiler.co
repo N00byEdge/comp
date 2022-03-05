@@ -278,6 +278,9 @@ fn parse_top_level() {
         switch(codegen.peek_type()) {
             @todo("parse_top_level default");
 
+        case tokenizer.end_of_file:
+            return;
+
         case tokenizer.keyword_zeroes:
             @todo("parse_top_level zeroes");
 
