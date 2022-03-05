@@ -217,7 +217,7 @@ fn put_evaluated_in_reg(regnum) [value] {
     value = @read64(codegen.eval_value);
 
     switch(@read64(codegen.eval_type)) {
-        @todo("put_arg_in_reg default type");
+        @todo("put_evaluated_in_reg default type");
 
     case itypes.local_variable:
         // mov reg, qword ptr [rbp - offset]
@@ -227,20 +227,20 @@ fn put_evaluated_in_reg(regnum) [value] {
         return;
 
     case itypes.local_buffer_addr:
-        @todo("put_arg_in_reg local_buffer_addr");
+        @todo("put_evaluated_in_reg local_buffer_addr");
 
     case itypes.global_variable:
-        @todo("put_arg_in_reg global_variable");
+        @todo("put_evaluated_in_reg global_variable");
 
     case itypes.global_buffer_addr:
-        @todo("put_arg_in_reg global_buffer_addr");
+        @todo("put_evaluated_in_reg global_buffer_addr");
 
     case itypes.comptime_int:
         load_reg_value(regnum, value);
         endcase;
 
     case itypes.function_addr:
-        @todo("put_arg_in_reg function_addr");
+        @todo("put_evaluated_in_reg function_addr");
 
     case itypes.runtime_int:
         if(regnum) {
