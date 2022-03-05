@@ -491,7 +491,12 @@ fn do_assignment(lhs_type, lhs_value) {
         return;
 
     case itypes.global_variable:
-        @todo("x86_64 assign global variable");
+        // mov [rel glob], rax
+        rexw();
+        code8(0x89);
+        code8(0x05);
+        ref_riprel32(lhs_value, 0);
+        return;
     }
 }
 
