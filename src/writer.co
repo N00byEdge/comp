@@ -75,3 +75,21 @@ fn code_offset() {
 fn code_addr() {
     return section_addr(text);
 }
+
+comptime dump_flags = syscalls.O_WRONLY | syscalls.O_CREAT;
+
+fn dump_section(filename, section) [fd, addr, len] {
+    fd = syscalls.open(filename, dump_flags);
+
+    addr = current_section_buf[section * 8];
+    len = current_section_bytes[section * 8];
+
+    syscalls.write_all(fd, addr, len);
+
+    syscalls.close(fd);
+}
+
+fn dump() [fd, addr] {
+    dump_section("text_dump.bin", text);
+    dump_section("rodata_dump.bin", rodata);
+}
