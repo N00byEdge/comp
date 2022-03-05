@@ -309,11 +309,13 @@ fn function_prologue(num_args, local_var_space, stack_frame_size) {
         } else { }
     } else { }
 
-    // sub rsp, local_var_space
-    rexw();
-    code8(0x81);
-    code8(0xEC);
-    code32(local_var_space);
+    if(local_var_space) {
+        // sub rsp, local_var_space
+        rexw();
+        code8(0x81);
+        code8(0xEC);
+        code32(local_var_space);
+    } else {}
 }
 
 fn builtin_memcpy() [tmp] {
