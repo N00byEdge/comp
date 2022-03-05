@@ -75,6 +75,16 @@ fn jmp_to(addr) {
     }
 }
 
+zeroes do_call_addr_ptr[8];
+
+fn do_call_addr(addr) {
+    if(do_call_addr_ptr[0]) {
+        @call(do_call_addr_ptr[0], addr);
+    } else {
+        tokenizer.error("do_call_addr not implemented!");
+    }
+}
+
 zeroes bitwise_negate_ptr[8];
 
 fn bitwise_negate() {
@@ -408,22 +418,27 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
                 @todo("comptime_int call (?)");
 
             case itypes.function_addr:
-                @todo("function_addr call");
+                do_call_addr(lhs_value);
+                lhs_value = 0x41414141;
+                lhs_type = itypes.runtime_int;
+                endcase;
 
             case itypes.builtin_function_codegen:
                 @call(lhs_value);
 
                 lhs_value = 0x41414141;
                 lhs_type = itypes.runtime_int;
-
-                tokenizer.expect_token(tokenizer.closing_paren, "Expected ')' after argument list");
-                tokenizer.discard();
                 endcase;
 
             case itypes.builtin_function_comptime:
                 lhs_value = @call(lhs_value);
                 lhs_type = itypes.comptime_int;
+                // endcase;
             }
+
+            tokenizer.expect_token(tokenizer.closing_paren, "Expected ')' after argument list");
+            tokenizer.discard();
+            endcase;
         }
     }
 

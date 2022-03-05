@@ -282,6 +282,19 @@ fn put_opt_arg_in_reg(regnum) {
     }
 }
 
+fn do_call_addr(addr) {
+    put_opt_arg_in_reg(rdi);
+    put_opt_arg_in_reg(rsi);
+    put_opt_arg_in_reg(rdx);
+    put_opt_arg_in_reg(rcx);
+    put_opt_arg_in_reg(r8);
+    put_opt_arg_in_reg(r9);
+
+    // call imm32
+    code8(0xE8);
+    ref_riprel32(addr, 0);
+}
+
 fn function_prologue(num_args, local_var_space, stack_frame_size) {
     push_reg(rbp);
 
@@ -563,6 +576,7 @@ fn init() {
 
     // Control flow
     codegen.jmp_to_ptr[0] = jmp_to;
+    codegen.do_call_addr_ptr[0] = do_call_addr;
     codegen.make_loop_break_ptr[0] = make_loop_break;
     codegen.if_condition_ptr[0] = if_condition;
     codegen.else_block_start_ptr[0] = else_block_start;
