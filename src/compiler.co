@@ -130,6 +130,7 @@ fn parse_import() [file_root, ident_node] {
     idents.node_set_attribute(ident_node, file_root);
 
     codegen.expect_token(tokenizer.semicolon, "Expected `;` after import");
+    codegen.discard();
 }
 
 fn add_builtins_to_current_file() [node, builtin_root] {
