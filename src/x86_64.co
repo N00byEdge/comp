@@ -236,6 +236,11 @@ fn bitwise_negate() {
     code8(0xD0);
 }
 
+fn neg_offset(offset) {
+    offset = -offset;
+    code32(offset);
+}
+
 fn rmimm_neg_offset_regs(offset, mem_reg, other_reg) {
     mem_reg &= 0x7;
     other_reg &= 0x7;
@@ -247,8 +252,14 @@ fn rmimm_neg_offset_regs(offset, mem_reg, other_reg) {
 
     code8(mem_reg);
 
-    offset = -offset;
-    code32(offset);
+    neg_offset(offset);
+}
+
+fn load_local_variable(regnum, offset) {
+    // mov reg, qword ptr [rbp - offset]
+    prefixes(64, regnum);
+    code8(0x8B);
+    rmimm_neg_offset_regs(offset, rbp, regnum);
 }
 
 fn put_evaluated_in_reg(regnum) [value] {
@@ -258,10 +269,7 @@ fn put_evaluated_in_reg(regnum) [value] {
         @todo("put_evaluated_in_reg default type");
 
     case itypes.local_variable:
-        // mov reg, qword ptr [rbp - offset]
-        prefixes(64, regnum);
-        code8(0x8B);
-        rmimm_neg_offset_regs(value, rbp, regnum);
+        load_local_variable(regnum, value);
         return;
 
     case itypes.local_buffer_addr:
@@ -513,6 +521,13 @@ fn else_block_end(jmp_end_fixup) {
     write_riprel32_to_here(jmp_end_fixup);
 }
 
+fn store_local_variable(regnum, offset) {
+    // mov [rbp - offset], regnum
+    rexw();
+    code8(0x89);
+    rmimm_neg_offset_regs(offset, rbp, regnum);
+}
+
 fn do_assignment(lhs_type, lhs_value) {
     // Todo: optimize for comptime known value
     put_evaluated_in_reg(rax);
@@ -521,10 +536,7 @@ fn do_assignment(lhs_type, lhs_value) {
         @todo("x86_64 assign default");
 
     case itypes.local_variable:
-        // mov [rbp - offset], rax
-        rexw();
-        code8(0x89);
-        rmimm_neg_offset_regs(lhs_value, rbp, rax);
+        store_local_variable(rax, lhs_value);
         return;
 
     case itypes.global_variable:
@@ -593,7 +605,152 @@ fn do_inplace_bitand(lhs_type, lhs_value) {
     }
 }
 
-fn less_than_runtime(lhs_type, lhs_value) {
+fn do_inplace_shift_right(lhs_type, lhs_value) {
+    // Todo: optimize for comptime known value
+    put_evaluated_in_reg(rcx);
+
+    switch(lhs_type) {
+        @todo("x86_64 inplace_shift_right default");
+
+    case itypes.local_variable:
+        // shr [rbp - offset], cl
+        rexw();
+        code8(0xD3);
+        code8(0xAB);
+        neg_offset(lhs_value);
+        return;
+    }
+}
+
+fn do_inplace_modulus(lhs_type, lhs_value) {
+    // Todo: optimize for comptime known value
+    put_evaluated_in_reg(rcx);
+
+    load_reg_value(rdx, 0); // Upper half of value
+
+    switch(lhs_type) {
+        @todo("x86_64 inplace_modulus default");
+
+    case itypes.local_variable:
+        load_local_variable(rax, lhs_value); // Lower half
+
+        // div rcx
+        rexw();
+        code8(0xF7);
+        code8(0xF1);
+
+        store_local_variable(rdx, lhs_value);
+        return;
+    }
+}
+
+fn do_inplace_division(lhs_type, lhs_value) {
+    // Todo: optimize for comptime known value
+    put_evaluated_in_reg(rcx);
+
+    load_reg_value(rdx, 0); // Upper half of value
+
+    switch(lhs_type) {
+        @todo("x86_64 inplace_modulus default");
+
+    case itypes.local_variable:
+        load_local_variable(rax, lhs_value); // Lower half
+
+        // div rcx
+        rexw();
+        code8(0xF7);
+        code8(0xF1);
+
+        store_local_variable(rax, lhs_value);
+        return;
+    }
+}
+
+fn zero_extend_result() {
+    // movzx rax, al
+    rexw();
+    code8(0x0F);
+    code8(0xB6);
+    code8(0xC0);
+}
+
+fn set_less_than() {
+    // setb al
+    code8(0x0F);
+    code8(0x92);
+    code8(0xC0);
+
+    zero_extend_result();
+}
+
+fn set_greater_than_equal() {
+    // setae al
+    code8(0x0F);
+    code8(0x93);
+    code8(0xC0);    
+
+    zero_extend_result();
+}
+
+fn set_equals() {
+    // sete al
+    code8(0x0F);
+    code8(0x94);
+    code8(0xC0);
+
+    zero_extend_result();
+}
+
+fn do_addition(lhs_type, lhs_value) {
+    switch(lhs_type) {
+        @todo("x86_64 addition lhs default");
+
+    case itypes.local_variable:
+        // Todo: optimize for comptime evaluated
+        put_evaluated_in_reg(rax);
+        load_local_variable(rcx, lhs_value);
+
+        // add rax, rcx
+        rexw();
+        code8(0x01);
+        code8(0xC8);
+        return;
+    }
+}
+
+// cmp (r/m runtime_value), comptime_value
+fn compare_runtime_comptime(runtime_type, runtime_value, comptime_value) {
+    switch(runtime_type) {
+        @todo("x86_64 compare_runtime_comptime default");
+    case itypes.local_variable:
+        if(comptime_value < 0x80000000) { // 32 bit value, TODO: negative values too(?)
+            // cmp qword ptr [rbp - offset], imm32
+            rexw();
+            code8(0x81);
+            code8(0xBD);
+            neg_offset(runtime_value);
+            code32(comptime_value);
+        } else {
+            @todo("x86_64 compare_runtime_comptime local_variable large");
+        }
+        return;
+    case itypes.global_variable:
+        if(comptime_value < 0x80000000) { // 32 bit value, TODO: negative values too(?)
+            // cmp qword [rel glob], imm32
+            rexw();
+            code8(0x81);
+            code8(0x3D);
+            ref_riprel32(runtime_value, 4);
+            code32(comptime_value);
+        } else {
+            @todo("x86_64 compare_runtime_comptime global_variable large");
+        }
+        return;
+    }
+}
+
+// cmp (r/m runtime_value), eval_value (rax)
+fn compare_runtime(lhs_type, lhs_value) {
     put_evaluated_in_reg(rax); // rhs in rax
 
     switch(lhs_type) {
@@ -604,17 +761,6 @@ fn less_than_runtime(lhs_type, lhs_value) {
         rexw();
         code8(0x39);
         rmimm_neg_offset_regs(lhs_value, rbp, rax);
-
-        // setb al
-        code8(0x0F);
-        code8(0x92);
-        code8(0xC0);
-
-        // movzx rax, al
-        rexw();
-        code8(0x0F);
-        code8(0xB6);
-        code8(0xC0);
         return;
 
     case itypes.global_variable:
@@ -622,22 +768,50 @@ fn less_than_runtime(lhs_type, lhs_value) {
     }
 }
 
+fn less_than_runtime(lhs_type, lhs_value) {
+    compare_runtime(lhs_type, lhs_value);
+    set_less_than();
+}
+
 fn equals_runtime_comptime(runtime_type, runtime_value, comptime_value) {
-    switch(runtime_type) {
-        @todo("x86_64 equals_runtime_comptime default");
-    case itypes.local_variable:
-        @todo("x86_64 equals_runtime_comptime local_variable");
-    case itypes.global_variable:
-        if(comptime_value < 0x80000000) { // 32 bit value, TODO: negative values too(?)
-            rexw();
-            code8(0x81);
-            code8(0x3D);
-            ref_riprel32(runtime_value, 4);
-            code32(comptime_value);
-        } else {
-            @todo("x86_64 equals_runtime_comptime global_variable large");
-        }
-    }
+    compare_runtime_comptime(runtime_type, runtime_value, comptime_value);
+    set_equals();
+}
+
+fn greater_than_equal_runtime_comptime(runtime_type, runtime_value, comptime_value) {
+    compare_runtime_comptime(runtime_type, runtime_value, comptime_value);
+    set_greater_than_equal();
+}
+
+fn add_elf_entry_point(main) [retval] {
+    retval = writer.code_addr();
+
+    // argc = [rsp]
+    // mov rdi, qword ptr [rsp]
+    rexw();
+    code8(0x8B);
+    code8(0x3C);
+    code8(0x24);
+
+    // argv = rsp + 8
+    // lea rsi, [rsp + 8]
+    rexw();
+    code8(0x8D);
+    code8(0x74);
+    code8(0x24);
+    code8(0x08);
+
+    // envp = rsp + (argc + 1) * 8 + 0x8
+    // lea rdx, [rsp + rdi * 8 + 0x10]
+    rexw();
+    code8(0x8D);
+    code8(0x54);
+    code8(0xFC);
+    code8(0x10);
+
+    jmp_to(main);
+
+    return retval;
 }
 
 fn builtin_write8() {
@@ -691,6 +865,7 @@ fn init() {
     // Function prologue and epilogue
     codegen.function_prologue_ptr[0] = function_prologue;
     codegen.return_evaluated_ptr[0] = return_evaluated;
+    codegen.add_elf_entry_point_ptr[0] = add_elf_entry_point;
 
     // Control flow
     codegen.jmp_to_ptr[0] = jmp_to;
@@ -705,10 +880,15 @@ fn init() {
     codegen.do_inplace_add_ptr[0] = do_inplace_add;
     codegen.do_inplace_sub_ptr[0] = do_inplace_sub;
     codegen.do_inplace_bitand_ptr[0] = do_inplace_bitand;
+    codegen.do_inplace_shift_right_ptr[0] = do_inplace_shift_right;
+    codegen.do_inplace_division_ptr[0] = do_inplace_division;
+    codegen.do_inplace_modulus_ptr[0] = do_inplace_modulus;
 
     // Arith ops
+    codegen.do_addition_ptr[0] = do_addition;
     codegen.less_than_runtime_ptr[0] = less_than_runtime;
     codegen.equals_runtime_comptime_ptr[0] = equals_runtime_comptime;
+    codegen.greater_than_equal_runtime_comptime_ptr[0] = greater_than_equal_runtime_comptime;
 
     // Unary ops
     codegen.bitwise_negate_ptr[0] = bitwise_negate;

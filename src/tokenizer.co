@@ -1,6 +1,16 @@
 import "src/identifiers.co" identifiers;
-import "src/source.co" source;
 import "src/printer.co" printer;
+import "src/source.co" source;
+import "src/strings.co" strings;
+import "src/writer.co" writer;
+
+fn error(fail_message) {
+    writer.dump();
+    printer.print_string(fail_message);
+    printer.putchar('\n');
+    printer.exit(1);
+    unreachable;
+}
 
 zeroes token_type[8];
 zeroes token_value[8];
@@ -692,13 +702,6 @@ fn fill_token(node) [chr] {
 fn peek_type(node) {
     fill_token(node);
     return token_type[0];
-}
-
-fn error(fail_message) {
-    printer.print_string(fail_message);
-    printer.putchar('\n');
-    printer.exit(1);
-    unreachable;
 }
 
 fn expect_token(expected_type, fail_message, node) {

@@ -27,8 +27,9 @@ fn assert_fail(statement, file, line) {
 import "src/compiler.co" compiler;
 import "src/strings.co" strings;
 import "src/x86_64.co" x86_64;
+import "src/elf.co" elf;
 
-fn main(argc, argv) [tmp] {
+fn main(argc, argv) [tmp, fd] {
     if(argc < 3) {
         printer.print_string("Usage: ");
         if(argc) {
@@ -47,13 +48,15 @@ fn main(argc, argv) [tmp] {
         compiler.init(tmp);
 
         x86_64.init();
+        elf.init();
 
         // Get the root source file
         tmp = argv[1 * 8];
         compiler.set_source_file(tmp);
         compiler.parse_top_level();
 
-        @todo("Write output file");
+        fd = syscalls.open("out.elf", 0x41);
+        elf.write(fd);
         printer.exit(0);
         unreachable;
     }

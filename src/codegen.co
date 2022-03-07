@@ -175,6 +175,16 @@ fn equals_runtime_comptime(runtime_type, runtime_value, comptime_value) {
     }
 }
 
+zeroes greater_than_equal_runtime_comptime_ptr[8];
+
+fn greater_than_equal_runtime_comptime(runtime_type, runtime_value, comptime_value) {
+    if(greater_than_equal_runtime_comptime_ptr[0]) {
+        @call(greater_than_equal_runtime_comptime_ptr[0], runtime_type, runtime_value, comptime_value);
+    } else {
+        tokenizer.error("greater_than_equal_runtime_comptime not implemented!");
+    }
+}
+
 zeroes do_assignment_ptr[8];
 
 fn do_assignment(lhs_type, lhs_value) {
@@ -215,6 +225,46 @@ fn do_inplace_bitand(lhs_type, lhs_value) {
     }
 }
 
+zeroes do_inplace_shift_right_ptr[8];
+
+fn do_inplace_shift_right(lhs_type, lhs_value) {
+    if(do_inplace_shift_right_ptr[0]) {
+        @call(do_inplace_shift_right_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_inplace_shift_right not implemented!");
+    }
+}
+
+zeroes do_inplace_division_ptr[8];
+
+fn do_inplace_division(lhs_type, lhs_value) {
+    if(do_inplace_division_ptr[0]) {
+        @call(do_inplace_division_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_inplace_division not implemented!");
+    }
+}
+
+zeroes do_inplace_modulus_ptr[8];
+
+fn do_inplace_modulus(lhs_type, lhs_value) {
+    if(do_inplace_modulus_ptr[0]) {
+        @call(do_inplace_modulus_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_inplace_modulus not implemented!");
+    }
+}
+
+zeroes do_addition_ptr[8];
+
+fn do_addition(lhs_type, lhs_value) {
+    if(do_addition_ptr[0]) {
+        @call(do_addition_ptr[0], lhs_type, lhs_value);
+    } else {
+        tokenizer.error("do_addition not implemented!");
+    }
+}
+
 zeroes equals_runtime_ptr[8];
 
 fn equals_runtime(lhs_type, lhs_value, rhs_type, rhs_value) {
@@ -235,6 +285,15 @@ fn less_than_runtime(lhs_type, lhs_value, rhs_type, rhs_value) {
     }
 }
 
+zeroes add_elf_entry_point_ptr[8];
+
+fn add_elf_entry_point() {
+    if(add_elf_entry_point_ptr[0]) {
+        @call(add_elf_entry_point_ptr[0]);
+    } else {
+        tokenizer.error("add_elf_entry_point not implemented!");
+    }
+}
 
 fn collapse_lhs(ident) {
     switch(peek_type()) {
@@ -516,6 +575,48 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
                 return;
             }
 
+        case tokenizer.shift_right_inplace:
+            discard();
+
+            switch(lhs_type) {
+                tokenizer.error("Invalid lhs for in-place op");
+
+            case itypes.local_variable:
+            case itypes.global_variable:
+                eval_expr(primary_expr_only);
+                do_inplace_shift_right(lhs_type, lhs_value);
+                eval_type[0] = itypes.runtime_int;
+                return;
+            }
+
+        case tokenizer.modulus_inplace:
+            discard();
+
+            switch(lhs_type) {
+                tokenizer.error("Invalid lhs for in-place op");
+
+            case itypes.local_variable:
+            case itypes.global_variable:
+                eval_expr(primary_expr_only);
+                do_inplace_modulus(lhs_type, lhs_value);
+                eval_type[0] = itypes.runtime_int;
+                return;
+            }
+
+        case tokenizer.division_inplace:
+            discard();
+
+            switch(lhs_type) {
+                tokenizer.error("Invalid lhs for in-place op");
+
+            case itypes.local_variable:
+            case itypes.global_variable:
+                eval_expr(primary_expr_only);
+                do_inplace_division(lhs_type, lhs_value);
+                eval_type[0] = itypes.runtime_int;
+                return;
+            }
+
         case tokenizer.less_than:
             discard();
 
@@ -526,7 +627,10 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
                     eval_value[0] = lhs_value < eval_value[0];
                     return;
                 } else {
-                    @todo("eval_expr less_than 1");
+                    rhs_type = eval_type[0];
+                    rhs_value = eval_value[0];
+                    greater_than_equal_runtime_comptime(rhs_type, rhs_value, lhs_value);
+                    return;
                 }
             } else {
                 if(lhs_type == itypes.runtime_int) {
@@ -565,7 +669,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
 
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = lhs_value > eval_value[0];
+                    eval_value[0] = eval_value[0] < lhs_value;
                     return;
                 } else {
                     @todo("eval_expr greater_than 1");
@@ -580,7 +684,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
 
             if(lhs_type == itypes.comptime_int) {
                 if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = lhs_value >= eval_value[0];
+                    eval_value[0] = eval_value[0] <= lhs_value;
                     return;
                 } else {
                     @todo("eval_expr greater_than_equal 1");
@@ -742,12 +846,11 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
                 if(eval_type[0] == itypes.comptime_int) {
                     eval_value[0] += lhs_value;
                     return;
-                } else {
-                    @todo("eval_expr addition 1");
-                }
-            } else {
-                @todo("eval_expr addition 2");
-            }
+                } else { }
+            } else { }
+            do_addition(lhs_type, lhs_value);
+            eval_type[0] = itypes.runtime_int;
+            return;
 
         case tokenizer.subtraction:
             discard();
@@ -878,12 +981,12 @@ fn parse_block() [tmp, save0, save1] {
 
             eval_expr(any_unambigous_expr);
 
+            expect_token(tokenizer.closing_paren, "Expected `)` after if conditional");
+            discard();
+
             if(eval_type[0] == itypes.comptime_int) {
                 @todo("comptime if");
             } else {
-                expect_token(tokenizer.closing_paren, "Expected `)` after if conditional");
-                discard();
-
                 tmp = if_condition();
 
                 parse_block();

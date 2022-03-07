@@ -1,0 +1,292 @@
+import "src/writer.co" writer;
+import "src/syscalls.co" syscalls;
+import "src/codegen.co" codegen;
+import "src/strings.co" strings;
+import "src/identifiers.co" idents;
+import "src/identifier_types.co" itypes;
+import "src/tokenizer.co" tokenizer;
+
+enum {
+    sh_null,
+
+    sh_text,
+    sh_rodata,
+    sh_data,
+    sh_bss,
+
+    sh_shstrtab,
+    sh_symtab,
+    sh_symstrtab,
+
+    sh_end,
+};
+
+enum {
+    phdr_size = 0x38,
+    shdr_size = 0x40,
+    shstrtab_size = 55,
+};
+
+enum {
+    layout_header,
+    layout_header_end = 0x40,
+
+    layout_phdrs = layout_header_end,
+    layout_phdrs_end = layout_phdrs + (phdr_size * 4),
+
+    layout_shdrs = layout_phdrs_end,
+    layout_shdrs_end = layout_shdrs + (shdr_size * sh_end),
+
+    layout_shstrtab = layout_shdrs_end,
+    layout_shstrtab_end = layout_shstrtab + shstrtab_size,
+};
+
+zeroes symtab_ptr[8];
+zeroes symtab_offset[8];
+
+zeroes symstrtab_ptr[8];
+zeroes symstrtab_offset[8];
+
+fn add_symbol(node) [addr, name, function, len, ptr] {
+    addr = idents.node_get_value(node);
+    name = tokenizer.buffer;
+
+    ptr = symstrtab_ptr[0];
+    ptr += symstrtab_offset[0];
+
+    len = strings.len(name);
+    len += 1; // Include null terminator
+
+    @memcpy(ptr, name, len);
+
+    ptr = symtab_ptr[0];
+    ptr += symtab_offset[0];
+
+    ptr[0] = symstrtab_offset[0];
+    if(idents.node_get_type(node) == itypes.function_addr) {
+        ptr[4] = 0x12;
+    } else {
+        ptr[4] = 0x11;
+    }
+    ptr[8] = addr;
+
+    symtab_offset[0] += 0x18;
+
+    symstrtab_offset[0] += len;
+}
+
+fn init() {
+    symtab_ptr[0] = syscalls.anon_mmap(0x100000);
+    symstrtab_ptr[0] = syscalls.anon_mmap(0x100000);
+}
+
+comptime elf_header_size = 0x1000;
+
+zeroes ptr[8];
+zeroes elf_header[elf_header_size];
+zeroes tmp[0x100];
+
+fn add_data(data, len) [p] {
+    p = ptr[0];
+    @memcpy(p, data, len);
+    ptr[0] += len;
+}
+
+fn add_int(value, size) {
+    tmp[0] = value;
+    add_data(tmp, size);
+}
+
+fn write(fd) [offset, i] {
+    ptr[0] = elf_header;
+
+    add_data("\x7FELF\x02\x01\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00", 16); // Header
+    add_int(2, 2); // Type = Executable
+    add_int(0x3E, 2); // Machine = x86_64
+    add_int(1, 4); // Version = Current
+
+    tmp[0] = codegen.add_elf_entry_point();
+    add_data(tmp, 8);
+
+    add_int(layout_phdrs, 8); // phoff
+    add_int(layout_shdrs, 8); // shoff
+    add_int(0, 4); // flags
+    add_int(0, 2); // ehsize
+    add_int(phdr_size, 2); // phentsize
+    add_int(4, 2); // phnum
+    add_int(shdr_size, 2); // shentsize
+    add_int(sh_end, 2); // shnum
+    add_int(sh_shstrtab, 2); // shstrndx
+
+    i = 0;
+    offset = elf_header_size;
+
+    // phdrs
+    loop {
+        switch(i) {
+            break;
+        
+        case writer.text:
+            add_int(1, 4); // LOAD
+            add_int(0x5, 4); // RX
+            endcase;
+
+        case writer.rodata:
+            add_int(1, 4); // LOAD
+            add_int(0x4, 4); // R
+            endcase;
+
+        case writer.data:
+            add_int(1, 4); // LOAD
+            add_int(0x6, 4); // RW
+            endcase;
+
+        case writer.bss:
+            add_int(1, 4); // LOAD
+            add_int(0x6, 4); // RW
+            endcase;
+        }
+
+        // fileoff
+        add_int(offset, 8); // foff
+
+        tmp[0] = writer.section_base(i);
+        add_data(tmp, 8); // vaddr
+        add_data(tmp, 8); // paddr
+
+        // filesz
+        tmp[0] = writer.section_offset(i);
+        add_data(tmp, 8);
+
+        tmp[0] += 0xFFF;
+        tmp[0] &= ~0xFFF;
+
+        offset += tmp[0];
+
+        // memsz
+        tmp[0] = writer.section_offset(i);
+        tmp[0] += 0xFFF + 7;
+        tmp[0] &= ~0xFFF;
+        
+        add_data(tmp, 8);
+
+        // Alignment
+        add_int(0x1000, 8);
+
+        i += 1;
+        continue;
+    }
+
+    offset = elf_header_size;
+
+    // null shdr
+    add_int(0, shdr_size);
+
+    // text shdr
+    add_int(1, 4); // name
+    add_int(1, 4); // type = PROGBITS
+    add_int(0x06, 8); // flags = AX
+    tmp[0] = writer.section_base(writer.text);
+    add_data(tmp, 8); // addr
+    add_data(offset, 8); // offset
+    tmp[0] = writer.section_offset(writer.text);
+    add_data(tmp, 8); // size
+    tmp[0] += 0xFFF;
+    tmp[0] &= ~0xFFF;
+    offset += tmp[0];
+    add_int(0, 4); // link
+    add_int(0, 4); // info
+    add_int(0x1000, 8); // addralign
+    add_int(0, 8); // entsize
+
+    // rodata shdr
+    add_int(7, 4); // name = 1 + 6
+    add_int(1, 4); // type = PROGBITS
+    add_int(0x02, 8); // flags = A
+    tmp[0] = writer.section_base(writer.rodata);
+    add_data(tmp, 8); // addr
+    add_data(offset, 8); // offset
+    tmp[0] = writer.section_offset(writer.rodata);
+    add_data(tmp, 8); // size
+    tmp[0] += 0xFFF;
+    tmp[0] &= ~0xFFF;
+    offset += tmp[0];
+    add_int(0, 4); // link
+    add_int(0, 4); // info
+    add_int(0x1000, 8); // addralign
+    add_int(0, 8); // entsize
+
+    // data shdr
+    add_int(0x0F, 4); // name = 7 + 8
+    add_int(1, 4); // type = PROGBITS
+    add_int(0x03, 8); // flags = AW
+    tmp[0] = writer.section_base(writer.data);
+    add_data(tmp, 8); // addr
+    add_data(offset, 8); // offset
+    tmp[0] = writer.section_offset(writer.data);
+    add_data(tmp, 8); // size
+    tmp[0] += 0xFFF;
+    tmp[0] &= ~0xFFF;
+    offset += tmp[0];
+    add_int(0, 4); // link
+    add_int(0, 4); // info
+    add_int(0x1000, 8); // addralign
+    add_int(0, 8); // entsize
+
+    // bss shdr
+    add_int(0x15, 4); // name = 0xF + 6
+    add_int(8, 4); // type = NOBITS
+    add_int(0x03, 8); // flags = AW
+    tmp[0] = writer.section_base(writer.bss);
+    add_data(tmp, 8); // addr
+    add_int(0, 8); // offset
+    tmp[0] = writer.section_offset(writer.bss);
+    add_data(tmp, 8); // size
+    add_int(0, 4); // link
+    add_int(0, 4); // info
+    add_int(0x1000, 8); // addralign
+    add_int(0, 8); // entsize
+
+    // shstrtab shdr
+    add_int(0x1A, 4); // name = 0x15 + 5
+    add_int(3, 4); // type = STRTAB
+    add_int(0, 8); // flags
+    add_int(0, 8); // addr
+    add_int(layout_shstrtab, 8); // offset
+    add_int(shstrtab_size, 8); // size
+    add_int(0, 4); // link
+    add_int(0, 4); // info
+    add_int(1, 8); // addralign
+    add_int(0, 8); // entsize
+
+    // symtab shdr
+    add_int(0x24, 4); // name = 0x1A + 10
+    add_int(2, 4); // type = SYMTAB
+    add_int(0, 8); // flags
+    add_int(0, 8); // addr
+    add_data(offset, 8); // offset
+    tmp[0] = symtab_offset[0];
+    add_data(tmp, 8); // size
+    offset += tmp[0];
+    add_int(sh_symstrtab, 4); // link
+    add_int(0, 4); // info
+    add_int(0, 8); // addralign
+    add_int(0x18, 8); // entsize
+
+    // symstrtab shdr
+    add_int(0x2E, 4); // name = 0x24 + 10
+    add_int(3, 4); // type = STRTAB
+    add_int(0, 8); // flags
+    add_int(0, 8); // add
+    add_data(offset, 8); // offset
+    tmp[0] = symstrtab_offset[0];
+    add_data(tmp, 8); // size
+    offset += tmp[0];
+    add_int(0, 4); // link
+    add_int(0, 4); // info
+    add_int(0, 8); // addralign
+    add_int(0, 8); // entsize
+
+    add_data("\x00.text\x00.rodata\x00.data\x00.bss\x00.shstrtab\x00.symtab\x00.symstrtab\x00", shstrtab_size);
+    syscalls.write_all(fd, elf_header, elf_header_size);
+}

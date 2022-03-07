@@ -17,10 +17,10 @@ zeroes current_section_bytes[4 * 8];
 zeroes current_section_buf[3 * 8];
 
 fn init(binary_base_addr) {
-    section_base_addrs[0x00] = binary_base_addr + max_section_bytes * 0;
-    section_base_addrs[0x08] = binary_base_addr + max_section_bytes * 1;
-    section_base_addrs[0x10] = binary_base_addr + max_section_bytes * 2;
-    section_base_addrs[0x18] = binary_base_addr + max_section_bytes * 3;
+    section_base_addrs[0x00] = binary_base_addr + (max_section_bytes * 0);
+    section_base_addrs[0x08] = binary_base_addr + (max_section_bytes * 1);
+    section_base_addrs[0x10] = binary_base_addr + (max_section_bytes * 2);
+    section_base_addrs[0x18] = binary_base_addr + (max_section_bytes * 3);
 
     current_section_buf[0x00] = syscalls.anon_mmap(max_section_bytes);
     current_section_buf[0x08] = syscalls.anon_mmap(max_section_bytes);
@@ -33,6 +33,10 @@ fn section_offset(section) {
 
 fn section_addr(section) {
     return section_base_addrs[section * 8] + current_section_bytes[section * 8];
+}
+
+fn section_base(section) {
+    return section_base_addrs[section * 8];
 }
 
 fn patch32(value, section, addr) {

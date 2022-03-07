@@ -22,8 +22,10 @@ fn putchar(ch) [ptr] {
         flush();
     } else {}
 
-    ptr = buffer + buf_size[0];
+    ptr = buffer;
+    ptr += buf_size[0];
     buf_size[0] += 1;
+
     @write8(ptr, ch);
 
     // Uncomment this to flush on every '\n'
@@ -49,9 +51,10 @@ comptime dec_offset = '0' - 0x00;
 comptime hex_offset = 'A' - 0x0A;
 
 fn print_hex(value) [tmp] {
-    tmp = value & 0xF;
+    tmp = value;
+    tmp &= 0xF;
 
-    if(tmp > 9) {
+    if(9 < tmp) {
         tmp += hex_offset;
     } else {
         tmp += dec_offset;
