@@ -238,8 +238,48 @@ fn read_int_literal_token_zero() {
     }
 }
 
-fn read_char_literal_token() {
-    @todo("read_char_literal_token");
+fn peek_val(peek) {
+    peek = source.peek(peek);
+    return strings.chr_val(peek);
+}
+
+fn read_char_literal_token() [chr] {
+    @write64(token_type, int_literal);
+    chr = source.peek(0);
+
+    if(chr == '\\') {
+        switch(source.peek(1)) {
+            error("Bad char literal escaped char");
+
+        case 'n':
+            source.consume(3);
+            return '\n';
+
+        case 'r':
+            source.consume(3);
+            return '\r';
+
+        case 't':
+            source.consume(3);
+            return '\t';
+
+        case '\\':
+            source.consume(3);
+            return '\\';
+            
+        case 'x':
+            chr = peek_val(2);
+            chr <<= 4;
+            chr |= peek_val(3);
+            source.consume(5);
+            return chr;
+        }
+        @todo("read_char_literal_token escape");
+    } else {
+        @write64(token_value, chr);
+        source.consume(2);
+        return;
+    }
 }
 
 fn read_string_literal_token() [len] {
@@ -257,7 +297,41 @@ fn read_string_literal_token() [len] {
             @write64(token_value, len);
             return;
         case '\\':
-            @todo("read_string_literal_token escape");
+            switch(source.peek(1)) {
+                error("Bad string literal escaped char");
+
+            case 'n':
+                buffer[len] = '\n';
+                source.consume(2);
+                len += 1;
+                continue;
+
+            case 'r':
+                buffer[len] = '\r';
+                source.consume(2);
+                len += 1;
+                continue;
+
+            case 't':
+                buffer[len] = '\t';
+                source.consume(2);
+                len += 1;
+                continue;
+
+            case '\\':
+                buffer[len] = '\\';
+                source.consume(2);
+                len += 1;
+                continue;
+
+            case 'x':
+                buffer[len] = peek_val(2);
+                buffer[len] <<= 4;
+                buffer[len] |= peek_val(3);
+                source.consume(4);
+                len += 1;
+                continue;
+            }
         }
     }
 }

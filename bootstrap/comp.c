@@ -108,6 +108,18 @@ void read_filename() {
     }
 }
 
+u64 from_hex(char val) {
+    switch(val) {
+    default: TODO
+    case '0'...'9':
+        return val - '0' + 0x0;
+    case 'A'...'F':
+        return val - 'A' + 0xA;
+    case 'a'...'f':
+        return val - 'f' + 0xa;
+    }
+}
+
 u64 read_string_literal() {
     assert(peek() == '"');
     consume();
@@ -134,7 +146,10 @@ u64 read_string_literal() {
                 write_generic('\r', SECTION_RODATA, 1);
                 break;
             case 'x':
-                TODO
+                chr = from_hex(consume()) << 4;
+                chr |= from_hex(consume());
+                write_generic(chr, SECTION_RODATA, 1);
+                break;
             }
             break;
         case '"':
