@@ -1,6 +1,7 @@
 import "src/codegen.co" codegen;
 import "src/identifier_types.co" itypes;
 import "src/identifiers.co" idents;
+import "src/tokenizer.co" tokenizer;
 
 enum {
     eval_comptime,
@@ -9,8 +10,23 @@ enum {
 
 zeroes builtin_root[8];
 
-fn builtin_size_of() {
-	@todo("builtin size_of");
+fn builtin_size_of() [node] {
+	node = codegen.current_file_root[0];
+	node = tokenizer.expect_token(tokenizer.identifier , "Expected identifier after `@size_of(`", node);
+
+	tokenizer.discard();
+
+	switch(idents.node_get_type(node)) {
+		tokenizer.error("Invalid identifier for `@size_of()`!");
+
+	case itypes.global_variable:
+	case itypes.local_variable:
+		return 8;
+
+	case itypes.global_buffer:
+	case itypes.local_buffer:
+		return idents.node_get_attribute(node);
+	}
 }
 
 fn builtin_embed() {
