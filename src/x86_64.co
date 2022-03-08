@@ -597,10 +597,11 @@ fn make_loop_break() {
 
     jmp_riprel32(0x41414141);
 
-    return writer.code_addr() - 4;
+    return writer.code_addr() - 5;
 }
 
 fn loop_break_to_here(loop_break) {
+    loop_break += 1;
     write_riprel32_to_here(loop_break);
 }
 
