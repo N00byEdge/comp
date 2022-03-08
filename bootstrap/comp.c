@@ -2676,6 +2676,24 @@ u64 builtin_memcpy(int context) {
     return 0;
 }
 
+u64 builtin_memset(int context) {
+    u32 memset_regs[] = {
+        REG_IDX_RDI,
+        REG_IDX_RAX,
+        REG_IDX_RCX,
+    };
+
+    put_fargs_in_regs(memset_regs);
+
+    // rep
+    write8(0xF3, SECTION_TEXT);
+
+    // stosb
+    write8(0xAA, SECTION_TEXT);
+
+    return 0;
+}
+
 u64 builtin_syscall(int context) {
     u32 syscall_regs[] = {
         REG_IDX_RAX,
@@ -2845,6 +2863,7 @@ void add_builtins() {
     add_builtin_fn("write64", builtin_write64);
     add_builtin_fn("size_of", builtin_size_of);
     add_builtin_fn("memcpy", builtin_memcpy);
+    add_builtin_fn("memset", builtin_memset);
     add_builtin_fn("call", builtin_call);
 
     // Helpers for writing code
