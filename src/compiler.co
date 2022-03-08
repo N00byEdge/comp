@@ -104,6 +104,7 @@ fn parse_file_if_needed(file_path) [node, new_file_root] {
         new_file_root = parse_additional_file(file_path, node);
 
         idents.node_set_type(node, itypes.fully_parsed_filename);
+        idents.node_set_attribute(node, new_file_root);
         return new_file_root;
 
     case itypes.fully_parsed_filename:

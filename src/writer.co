@@ -83,7 +83,7 @@ fn code_addr() {
 comptime dump_flags = syscalls.O_WRONLY | syscalls.O_CREAT;
 
 fn dump_section(filename, section) [fd, addr, len] {
-    fd = syscalls.open(filename, dump_flags);
+    fd = syscalls.open(filename, dump_flags, syscalls.normal_file);
 
     addr = current_section_buf[section * 8];
     len = current_section_bytes[section * 8];

@@ -2793,6 +2793,9 @@ u64 builtin_call(int context) {
         TODO
         break;
     case 1:
+        // push rbx
+        write8(0x53, SECTION_TEXT);
+
         // Get the function pointer in rax
         parse_eval();
 
@@ -2808,6 +2811,9 @@ u64 builtin_call(int context) {
         // call rax
         write8(0xFF, SECTION_TEXT);
         write8(0xD0, SECTION_TEXT);
+
+        // pop rbx
+        write8(0x5B, SECTION_TEXT);
         break;
     }
     return 0;

@@ -55,7 +55,7 @@ fn main(argc, argv) [tmp, fd] {
         compiler.set_source_file(tmp);
         compiler.parse_top_level();
 
-        fd = syscalls.open("out.elf", 0x41);
+        fd = syscalls.open("out.elf", 0x41, syscalls.executable);
         elf.write(fd);
         printer.exit(0);
         unreachable;

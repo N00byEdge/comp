@@ -45,8 +45,13 @@ enum {
     AT_EMPTY_PATH = 0x1000,
 };
 
-fn open(filename, flags) {
-    return @syscall(SYS_OPEN, filename, flags);
+enum {
+  executable = 0x1ED, // = 0o755
+  normal_file = 0x1A4, // = 0o644
+};
+
+fn open(filename, flags, mode) {
+    return @syscall(SYS_OPEN, filename, flags, mode);
 }
 
 fn close(fd) {
