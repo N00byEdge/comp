@@ -488,13 +488,12 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
         endcase;
 
     case tokenizer.string_literal:
-        discard();
-
         // Length, include null terminator
         lhs_value = peek_value() + 1;
 
         lhs_value = writer.intern_string(tokenizer.buffer, lhs_value, writer.rodata);
         lhs_type = itypes.global_buffer_addr;
+        discard();
 
         endcase;
 
