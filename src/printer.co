@@ -10,11 +10,14 @@ fn flush() [size] {
         size = buf_size[0];
         if(syscalls.write_all(syscalls.stderr, buffer, size)) {
             syscalls.exit(1);
+            unreachable;
         } else {
             buf_size[0] = 0;
             return;
         }
-    } else {}
+    } else {
+        return;
+    }
 }
 
 fn putchar(ch) [ptr] {

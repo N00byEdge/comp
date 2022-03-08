@@ -44,6 +44,8 @@ enum {
 zeroes symtab_ptr[8];
 zeroes symtab_offset[8];
 
+zeroes num_symbols[8];
+
 zeroes symstrtab_ptr[8];
 zeroes symstrtab_offset[8];
 
@@ -64,20 +66,29 @@ fn add_symbol(node) [addr, name, function, len, ptr] {
 
     ptr[0] = symstrtab_offset[0];
     if(idents.node_get_type(node) == itypes.function_addr) {
-        ptr[4] = 0x12;
+        ptr[4] = 0x02;
+        ptr[6] = sh_text;
     } else {
-        ptr[4] = 0x11;
+        ptr[4] = 0x01;
+        ptr[6] = sh_bss;
     }
     ptr[8] = addr;
 
     symtab_offset[0] += 0x18;
 
     symstrtab_offset[0] += len;
+    num_symbols[0] += 1;
 }
 
 fn init() {
     symtab_ptr[0] = syscalls.anon_mmap(0x100000);
     symstrtab_ptr[0] = syscalls.anon_mmap(0x100000);
+
+    symtab_offset[0] += 0x18;
+    symstrtab_offset[0] += 1;
+    num_symbols[0] += 1;
+
+    codegen.add_symbol_ptr[0] = add_symbol;
 }
 
 comptime elf_header_size = 0x1000;
@@ -95,6 +106,13 @@ fn add_data(data, len) [p] {
 fn add_int(value, size) {
     tmp[0] = value;
     add_data(tmp, size);
+}
+
+fn seek_align(fd) [seek] {
+    seek = syscalls.lseek(fd, 0, syscalls.SEEK_CUR);
+    seek += 0xFFF;
+    seek &= ~0xFFF;
+    syscalls.lseek(fd, seek, syscalls.SEEK_SET);
 }
 
 fn write(fd) [offset, i] {
@@ -188,7 +206,7 @@ fn write(fd) [offset, i] {
     add_int(0x06, 8); // flags = AX
     tmp[0] = writer.section_base(writer.text);
     add_data(tmp, 8); // addr
-    add_data(offset, 8); // offset
+    add_int(offset, 8); // offset
     tmp[0] = writer.section_offset(writer.text);
     add_data(tmp, 8); // size
     tmp[0] += 0xFFF;
@@ -200,12 +218,12 @@ fn write(fd) [offset, i] {
     add_int(0, 8); // entsize
 
     // rodata shdr
-    add_int(7, 4); // name = 1 + 6
+    add_int(7, 4); // name
     add_int(1, 4); // type = PROGBITS
     add_int(0x02, 8); // flags = A
     tmp[0] = writer.section_base(writer.rodata);
     add_data(tmp, 8); // addr
-    add_data(offset, 8); // offset
+    add_int(offset, 8); // offset
     tmp[0] = writer.section_offset(writer.rodata);
     add_data(tmp, 8); // size
     tmp[0] += 0xFFF;
@@ -217,12 +235,12 @@ fn write(fd) [offset, i] {
     add_int(0, 8); // entsize
 
     // data shdr
-    add_int(0x0F, 4); // name = 7 + 8
+    add_int(0x0F, 4); // name
     add_int(1, 4); // type = PROGBITS
     add_int(0x03, 8); // flags = AW
     tmp[0] = writer.section_base(writer.data);
     add_data(tmp, 8); // addr
-    add_data(offset, 8); // offset
+    add_int(offset, 8); // offset
     tmp[0] = writer.section_offset(writer.data);
     add_data(tmp, 8); // size
     tmp[0] += 0xFFF;
@@ -234,7 +252,7 @@ fn write(fd) [offset, i] {
     add_int(0, 8); // entsize
 
     // bss shdr
-    add_int(0x15, 4); // name = 0xF + 6
+    add_int(0x15, 4); // name
     add_int(8, 4); // type = NOBITS
     add_int(0x03, 8); // flags = AW
     tmp[0] = writer.section_base(writer.bss);
@@ -248,7 +266,7 @@ fn write(fd) [offset, i] {
     add_int(0, 8); // entsize
 
     // shstrtab shdr
-    add_int(0x1A, 4); // name = 0x15 + 5
+    add_int(0x1A, 4); // name
     add_int(3, 4); // type = STRTAB
     add_int(0, 8); // flags
     add_int(0, 8); // addr
@@ -260,25 +278,25 @@ fn write(fd) [offset, i] {
     add_int(0, 8); // entsize
 
     // symtab shdr
-    add_int(0x24, 4); // name = 0x1A + 10
+    add_int(0x24, 4); // name
     add_int(2, 4); // type = SYMTAB
     add_int(0, 8); // flags
     add_int(0, 8); // addr
-    add_data(offset, 8); // offset
+    add_int(offset, 8); // offset
     tmp[0] = symtab_offset[0];
     add_data(tmp, 8); // size
     offset += tmp[0];
     add_int(sh_symstrtab, 4); // link
-    add_int(0, 4); // info
+    add_data(num_symbols, 4); // info
     add_int(0, 8); // addralign
     add_int(0x18, 8); // entsize
 
     // symstrtab shdr
-    add_int(0x2E, 4); // name = 0x24 + 10
+    add_int(0x2C, 4); // name 
     add_int(3, 4); // type = STRTAB
     add_int(0, 8); // flags
     add_int(0, 8); // add
-    add_data(offset, 8); // offset
+    add_int(offset, 8); // offset
     tmp[0] = symstrtab_offset[0];
     add_data(tmp, 8); // size
     offset += tmp[0];
@@ -289,4 +307,32 @@ fn write(fd) [offset, i] {
 
     add_data("\x00.text\x00.rodata\x00.data\x00.bss\x00.shstrtab\x00.symtab\x00.symstrtab\x00", shstrtab_size);
     syscalls.write_all(fd, elf_header, elf_header_size);
+
+    seek_align(fd);
+
+    offset = writer.section_offset(writer.text);
+    i = writer.current_section_buf[writer.text * 8];
+    syscalls.write_all(fd, i, offset);
+
+    seek_align(fd);
+
+    offset = writer.section_offset(writer.rodata);
+    i = writer.current_section_buf[writer.rodata * 8];
+    syscalls.write_all(fd, i, offset);
+
+    seek_align(fd);
+
+    offset = writer.section_offset(writer.data);
+    i = writer.current_section_buf[writer.data * 8];
+    syscalls.write_all(fd, i, offset);
+
+    seek_align(fd);
+
+    offset = symtab_offset[0];
+    i = symtab_ptr[0];
+    syscalls.write_all(fd, i, offset);
+
+    offset = symstrtab_offset[0];
+    i = symstrtab_ptr[0];
+    syscalls.write_all(fd, i, offset);
 }

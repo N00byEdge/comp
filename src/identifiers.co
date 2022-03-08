@@ -9,7 +9,7 @@ comptime max_nexts = 0x80;
 comptime trie_node_value = max_nexts * trie_node_next_size;
 
 // Size of an entire trie node, including next pointers, attribute and value
-comptime trie_node_size = trie_node_value + (4 + 4 + 8);
+comptime trie_node_size = trie_node_value + (4 + (4 + 8));
 
 zeroes addr_value_trie_bytes[8];
 zeroes last_addr_value_trie[8];
@@ -27,7 +27,7 @@ fn alloc() {
 }
 
 fn node_addr(node_idx) {
-    return (trie_node_size * node_idx) + addr_value_trie_bytes[0];
+    return addr_value_trie_bytes[0] + (node_idx * trie_node_size);
 }
 
 fn trie_node_next(node_ptr, idx) [tmp] {

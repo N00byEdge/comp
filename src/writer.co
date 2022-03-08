@@ -39,15 +39,34 @@ fn section_base(section) {
     return section_base_addrs[section * 8];
 }
 
+fn patch8(value, section, addr) {
+    addr -= section_base_addrs[section * 8];
+    addr += current_section_buf[section * 8];
+    @write8(addr, value);
+}
+
+fn patch16(value, section, addr) {
+    addr -= section_base_addrs[section * 8];
+    addr += current_section_buf[section * 8];
+    @write16(addr, value);
+}
+
 fn patch32(value, section, addr) {
     addr -= section_base_addrs[section * 8];
     addr += current_section_buf[section * 8];
     @write32(addr, value);
 }
 
+fn patch64(value, section, addr) {
+    addr -= section_base_addrs[section * 8];
+    addr += current_section_buf[section * 8];
+    @write64(addr, value);
+}
+
 fn write_generic(value, section, num_bytes) [ptr] {
     if(section != bss) {
         ptr = current_section_buf[section * 8] + section_offset(section);
+        @memset(ptr, 0, num_bytes);
         @write64(ptr, value);
     } else {}
     current_section_bytes[section * 8] += num_bytes;
@@ -59,6 +78,7 @@ fn write_string(ptr, len, section) [retval, tmp] {
         if(len) {
             tmp = @read8(ptr);
             write_generic(tmp, section, 1);
+            ptr += 1;
             len -= 1;
             continue;
         } else {

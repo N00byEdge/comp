@@ -39,11 +39,52 @@ zeroes continue_addr[8];
 zeroes break_addr[8];
 zeroes break_was_used[8];
 
+zeroes switch_table[8]; // offset into rodata
 zeroes endcase_addr[8];
 zeroes endcase_was_used[8];
 
-zeroes parse_top_level_ptr[8];
-// TODO
+comptime rewind_buffer_local_size = 0
+    + (@size_of(continue_addr)
+    + (@size_of(break_addr)
+    + (@size_of(break_was_used)
+    + (@size_of(switch_table)
+    + (@size_of(endcase_addr)
+    + (@size_of(endcase_was_used)
+))))));
+
+comptime rewind_buffer_size = rewind_buffer_local_size + (8 * 2);
+
+fn rewind_save(rewind_buffer) {
+    @memcpy(rewind_buffer, continue_addr, rewind_buffer_local_size);
+    rewind_buffer[rewind_buffer_local_size + (8 * 0)] = writer.section_offset(writer.text);
+    rewind_buffer[rewind_buffer_local_size + (8 * 1)] = writer.section_offset(writer.rodata);
+}
+
+fn rewind_restore(rewind_buffer) [ptr, len] {
+    @memcpy(continue_addr, rewind_buffer, rewind_buffer_local_size);
+
+    ptr = writer.current_section_buf[writer.text * 8];
+    len = writer.section_offset(writer.text) - rewind_buffer[rewind_buffer_local_size + (8 * 0)];
+    @memset(ptr, 0, len);
+
+    writer.current_section_bytes[writer.text * 8] = rewind_buffer[rewind_buffer_local_size + (8 * 0)];
+
+    ptr = writer.current_section_buf[writer.rodata * 8];
+    len = writer.section_offset(writer.rodata) - rewind_buffer[rewind_buffer_local_size + (8 * 1)];
+    @memset(ptr, 0, len);
+
+    writer.current_section_bytes[writer.rodata * 8] = rewind_buffer[rewind_buffer_local_size + (8 * 1)];
+}
+
+zeroes add_symbol_ptr[8];
+
+fn add_symbol(num_args, local_var_space, total_stack_space) {
+    if(add_symbol_ptr[0]) {
+        @call(add_symbol_ptr[0], num_args);
+    } else {
+        tokenizer.error("add_symbol not implemented!");
+    }
+}
 
 zeroes function_prologue_ptr[8];
 
@@ -82,6 +123,16 @@ fn do_call_addr(addr) {
         @call(do_call_addr_ptr[0], addr);
     } else {
         tokenizer.error("do_call_addr not implemented!");
+    }
+}
+
+zeroes make_switch_ptr[8];
+
+fn make_switch() {
+    if(make_switch_ptr[0]) {
+        @call(make_switch_ptr[0]);
+    } else {
+        tokenizer.error("make_switch not implemented!");
     }
 }
 
@@ -398,7 +449,7 @@ fn eval_unary_op(op, operand_type, operand_value) {
     }
 }
 
-fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
+fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_buffer[rewind_buffer_size]] {
     op = peek_type();
 
     switch(op) {
@@ -453,24 +504,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
 
         discard();
 
-        switch(lhs_type) {
-            lhs_value = idents.node_get_value(lhs_value);
-            endcase;
-
-        case itypes.none:
-            tokenizer.error("Unknown identifier!");
-
-        case itypes.local_buffer:
-            lhs_type = itypes.local_buffer_addr;
-            lhs_value = idents.node_get_value(lhs_value);
-            endcase;
-
-        case itypes.global_buffer:
-            lhs_type = itypes.global_buffer_addr;
-            lhs_value = idents.node_get_value(lhs_value);
-            endcase;
-
-        case itypes.variable_scope:
+        if(lhs_type == itypes.variable_scope) {
             loop {
                 lhs_value = idents.node_get_attribute(lhs_value);
                 if(peek_type() == tokenizer.dot) {
@@ -492,7 +526,24 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
                     break;
                 }
             }
+        } else { }
 
+        switch(lhs_type) {
+            lhs_value = idents.node_get_value(lhs_value);
+            endcase;
+
+        case itypes.none:
+            tokenizer.error("Unknown identifier!");
+
+        case itypes.local_buffer:
+            lhs_type = itypes.local_buffer_addr;
+            lhs_value = idents.node_get_value(lhs_value);
+            endcase;
+
+        case itypes.global_buffer:
+            lhs_type = itypes.global_buffer_addr;
+            lhs_value = idents.node_get_value(lhs_value);
+            endcase;
             // endcase;
         }
 
@@ -505,17 +556,23 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
             eval_expr(any_unambigous_expr);
 
             switch(eval_type[0]) {
-                @todo("ident square bracket default");
-
-            case itypes.runtime_int:
                 // Runtime index. Darn.
-                do_binary_op(lhs_type, 0, tokenizer.addition, itypes.runtime_int);
+                rhs_type = eval_type[0];
+                rhs_value = eval_value[0];
+                do_binary_op(lhs_type, 0, tokenizer.addition, rhs_type, rhs_value);
                 lhs_type = itypes.runtime_reference;
                 endcase;
 
             case itypes.comptime_int:
                 switch(lhs_type) {
-                    @todo("ident square bracket comptime_int default");
+                case itypes.runtime_int:
+                case itypes.local_variable:
+                case itypes.global_variable:
+                    rhs_value = eval_value[0];
+                    do_binary_op(lhs_type, lhs_value, tokenizer.addition, itypes.comptime_int, rhs_value);
+                    lhs_type = itypes.runtime_reference;
+                    endcase;
+
                 case itypes.local_buffer_addr:
                     lhs_type = itypes.local_variable;
                     lhs_value += eval_value[0];
@@ -524,7 +581,6 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
                 case itypes.global_buffer_addr:
                     lhs_type = itypes.global_variable;
                     lhs_value += eval_value[0];
-
                     //endcase;
                 }
                 // endcase;
@@ -581,7 +637,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
     eval_type[0] = lhs_type;
     eval_value[0] = lhs_value;
 
-    if(primary_expr_only) {
+    if(expr_mode == primary_expr_only) {
         return;
     } else {
         op = peek_type();
@@ -602,21 +658,29 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
         case tokenizer.addition_inplace:
         case tokenizer.subtraction_inplace:
         case tokenizer.bitand_inplace:
+        case tokenizer.bitor_inplace:
+        case tokenizer.bitxor_inplace:
         case tokenizer.shift_right_inplace:
+        case tokenizer.shift_left_inplace:
+        case tokenizer.multiplication_inplace:
         case tokenizer.modulus_inplace:
         case tokenizer.division_inplace:
             discard();
 
-            // TODO: Rewind this save next evaluates to comptime int
             if(lhs_type == itypes.runtime_reference) {
+                rewind_save(rewind_buffer);
                 save_eval_value();
             } else { }
 
-            eval_expr(primary_expr_only);
+            eval_expr(any_unambigous_expr);
             rhs_type = eval_type[0];
             rhs_value = eval_value[0];
 
-            // Rewind here
+            if(lhs_type == itypes.runtime_reference) {
+                if(rhs_type == itypes.comptime_int) {
+                    rewind_restore(rewind_buffer);
+                } else { }
+            } else { }
 
             eval_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
             eval_type[0] = itypes.runtime_int; // TODO: Set undefined type here when available
@@ -638,11 +702,11 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
         case tokenizer.subtraction:
             discard();
 
-            // TODO: Rewind this save next evaluates to comptime int
             switch(lhs_type) {
                 endcase;
             case itypes.runtime_int:
             case itypes.runtime_reference:
+                rewind_save(rewind_buffer);
                 save_eval_value();
                 // endcase;
             }
@@ -651,7 +715,15 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
             rhs_type = eval_type[0];
             rhs_value = eval_value[0];
 
-            // Rewind here
+            if(rhs_type == itypes.comptime_int) {
+                switch(lhs_type) {
+                    endcase;
+                case itypes.runtime_int:
+                case itypes.runtime_reference:
+                    rewind_restore(rewind_buffer);
+                    // endcase;
+                }
+            } else { }
 
             eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
             return;
@@ -690,8 +762,21 @@ fn eval_comptime_expr(mode) {
     }
 }
 
+comptime max_switch_values = 0x80;
+comptime switch_table_entry_size = 4;
+comptime switch_table_size = switch_table_entry_size * max_switch_values;
+
+fn set_switch_case_here(case_value) {
+    if(case_value >= max_switch_values) {
+        printer.log_hex("Case value", case_value);
+        tokenizer.error("Switch case value out of range!");
+    } else {
+        // ...
+    }
+}
+
 fn parse_block() [tmp, save0, save1] {
-    expect_token(tokenizer.open_curly_brace, "Expected `{`");
+    expect_token(tokenizer.open_curly_brace, "Expected `{` at the start of block");
     discard();
     
     loop {
@@ -717,7 +802,31 @@ fn parse_block() [tmp, save0, save1] {
             continue;
 
         case tokenizer.keyword_case:
-            @todo("parse_block case");
+            discard();
+
+            save0 = eval_comptime_expr();
+            if(peek_type() == tokenizer.dot_dot_dot) {
+                discard();
+                save1 = eval_comptime_expr();
+            } else {
+                save1 = save0;
+            }
+
+            loop {
+                set_switch_case_here(save0);
+
+                if(save0 == save1) {
+                    break;
+                } else {
+                    save0 += 1;
+                    continue;
+                }
+            }
+
+            expect_token(tokenizer.colon, "Expected `:` after case value");
+            discard();
+
+            continue;
 
         case tokenizer.keyword_break:
             discard();
@@ -810,6 +919,38 @@ fn parse_block() [tmp, save0, save1] {
                 continue;
             }
 
+        case tokenizer.keyword_switch:
+            discard();
+            expect_token(tokenizer.open_paren, "Expected `(` after `switch`");
+            discard();
+
+            eval_expr(any_unambigous_expr);
+
+            expect_token(tokenizer.closing_paren, "Expected `)` after if conditional");
+            discard();
+
+            tmp = switch_table[0];
+            save0 = endcase_was_used[0];
+            save1 = endcase_addr[0];
+
+            endcase_was_used[0] = 0;
+            endcase_addr[0] = make_switch();
+            switch_table[0] = writer.section_offset(writer.rodata);
+
+            writer.write_generic(0, writer.rodata, switch_table_size);
+
+            parse_block();
+
+            expect_token(tokenizer.closing_curly_brace, "Expected `}` after switch block");
+            discard();
+
+            switch_table[0] = tmp;
+            endcase_was_used[0] = save0;
+            endcase_addr[0] = save1;
+
+            // @TODO: Check if endcase was used or block was fell through to determine deadness
+            // after switch() {}
+            continue;
 
         case tokenizer.keyword_endcase:
             discard();
@@ -865,5 +1006,6 @@ fn parse_block() [tmp, save0, save1] {
                 return;
             }
         }
+        continue;
     }
 }

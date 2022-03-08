@@ -12,13 +12,13 @@ zeroes current_line[8];
 zeroes current_column[8];
 
 comptime file_context_size = 0
-    + @size_of(file_len)
-    + @size_of(file_buf)
-    + @size_of(file_descriptor)
-    + @size_of(file_name)
-    + @size_of(current_index)
-    + @size_of(current_line)
-    + @size_of(current_column)
+    + (@size_of(file_len)
+    + (@size_of(file_buf)
+    + (@size_of(file_descriptor)
+    + (@size_of(file_name)
+    + (@size_of(current_index)
+    + (@size_of(current_line)
+    + @size_of(current_column)))))))
 ;
 
 fn stash_file_info(out_ptr) {
@@ -119,9 +119,9 @@ fn consume(num) [chr] {
         if(num) {
             chr = peek(0);
 
-            printer.print_string("Consumed '");
-            printer.putchar(chr);
-            printer.print_string("'\n");
+            //printer.print_string("Consumed '");
+            //printer.putchar(chr);
+            //printer.print_string("'\n");
 
             current_index[0] += 1;
 

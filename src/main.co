@@ -29,7 +29,11 @@ import "src/strings.co" strings;
 import "src/x86_64.co" x86_64;
 import "src/elf.co" elf;
 
-fn main(argc, argv) [tmp, fd] {
+fn identity(lmao) {
+    return lmao;
+}
+
+fn main(argc, argv) [tmp, fd, out_filename, i] {
     if(argc < 3) {
         printer.print_string("Usage: ");
         if(argc) {
@@ -42,6 +46,8 @@ fn main(argc, argv) [tmp, fd] {
         printer.exit(1);
         unreachable;
     } else {
+        out_filename = identity("out.elf");
+
         // Parse the binary base address
         tmp = argv[2 * 8];
         tmp = strings.parse_detect(tmp, 16);
@@ -55,7 +61,26 @@ fn main(argc, argv) [tmp, fd] {
         compiler.set_source_file(tmp);
         compiler.parse_top_level();
 
-        fd = syscalls.open("out.elf", 0x41, syscalls.executable);
+        fd = syscalls.open(out_filename, 0x41, syscalls.executable);
+
+        i = 3;
+        loop {
+            if(i < argc) {
+                tmp = argv[i * 8];
+                if(argv[i * 8][0] == '-') {
+                    if(argv[i * 8][1] == 'o') {
+                        out_filename = argv + ((i + 1) * 8);
+                        out_filename = out_filename[0];
+                        i += 2;
+                    } else { }
+                } else { }
+                printer.print_string("Unknown argument!\n");
+                printer.exit(1);
+            } else {
+                break;
+            }
+        }
+
         elf.write(fd);
         printer.exit(0);
         unreachable;
