@@ -85,16 +85,6 @@ fn do_call_addr(addr) {
     }
 }
 
-zeroes bitwise_negate_ptr[8];
-
-fn bitwise_negate() {
-    if(bitwise_negate_ptr[0]) {
-        @call(bitwise_negate_ptr[0]);
-    } else {
-        tokenizer.error("bitwise_negate not implemented!");
-    }
-}
-
 zeroes make_loop_break_ptr[8];
 
 fn make_loop_break() {
@@ -102,6 +92,16 @@ fn make_loop_break() {
         @call(make_loop_break_ptr[0]);
     } else {
         tokenizer.error("make_loop_break not implemented!");
+    }
+}
+
+zeroes loop_break_to_here_ptr[8];
+
+fn loop_break_to_here(loop_break) {
+    if(loop_break_to_here_ptr[0]) {
+        @call(loop_break_to_here_ptr[0], loop_break);
+    } else {
+        tokenizer.error("loop_break_to_here not implemented!");
     }
 }
 
@@ -155,136 +155,6 @@ fn save_eval_value() {
     }
 }
 
-zeroes discard_eval_value_ptr[8];
-
-fn discard_eval_value() {
-    if(discard_eval_value_ptr[0]) {
-        @call(discard_eval_value_ptr[0]);
-    } else {
-        tokenizer.error("discard_eval_value not implemented!");
-    }
-}
-
-zeroes equals_runtime_comptime_ptr[8];
-
-fn equals_runtime_comptime(runtime_type, runtime_value, comptime_value) {
-    if(equals_runtime_comptime_ptr[0]) {
-        @call(equals_runtime_comptime_ptr[0], runtime_type, runtime_value, comptime_value);
-    } else {
-        tokenizer.error("equals_runtime_comptime not implemented!");
-    }
-}
-
-zeroes greater_than_equal_runtime_comptime_ptr[8];
-
-fn greater_than_equal_runtime_comptime(runtime_type, runtime_value, comptime_value) {
-    if(greater_than_equal_runtime_comptime_ptr[0]) {
-        @call(greater_than_equal_runtime_comptime_ptr[0], runtime_type, runtime_value, comptime_value);
-    } else {
-        tokenizer.error("greater_than_equal_runtime_comptime not implemented!");
-    }
-}
-
-zeroes do_assignment_ptr[8];
-
-fn do_assignment(lhs_type, lhs_value) {
-    if(do_assignment_ptr[0]) {
-        @call(do_assignment_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_assignment not implemented!");
-    }
-}
-
-zeroes do_inplace_add_ptr[8];
-
-fn do_inplace_add(lhs_type, lhs_value) {
-    if(do_inplace_add_ptr[0]) {
-        @call(do_inplace_add_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_inplace_add not implemented!");
-    }
-}
-
-zeroes do_inplace_sub_ptr[8];
-
-fn do_inplace_sub(lhs_type, lhs_value) {
-    if(do_inplace_sub_ptr[0]) {
-        @call(do_inplace_sub_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_inplace_sub not implemented!");
-    }
-}
-
-zeroes do_inplace_bitand_ptr[8];
-
-fn do_inplace_bitand(lhs_type, lhs_value) {
-    if(do_inplace_bitand_ptr[0]) {
-        @call(do_inplace_bitand_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_inplace_bitand not implemented!");
-    }
-}
-
-zeroes do_inplace_shift_right_ptr[8];
-
-fn do_inplace_shift_right(lhs_type, lhs_value) {
-    if(do_inplace_shift_right_ptr[0]) {
-        @call(do_inplace_shift_right_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_inplace_shift_right not implemented!");
-    }
-}
-
-zeroes do_inplace_division_ptr[8];
-
-fn do_inplace_division(lhs_type, lhs_value) {
-    if(do_inplace_division_ptr[0]) {
-        @call(do_inplace_division_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_inplace_division not implemented!");
-    }
-}
-
-zeroes do_inplace_modulus_ptr[8];
-
-fn do_inplace_modulus(lhs_type, lhs_value) {
-    if(do_inplace_modulus_ptr[0]) {
-        @call(do_inplace_modulus_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_inplace_modulus not implemented!");
-    }
-}
-
-zeroes do_addition_ptr[8];
-
-fn do_addition(lhs_type, lhs_value) {
-    if(do_addition_ptr[0]) {
-        @call(do_addition_ptr[0], lhs_type, lhs_value);
-    } else {
-        tokenizer.error("do_addition not implemented!");
-    }
-}
-
-zeroes equals_runtime_ptr[8];
-
-fn equals_runtime(lhs_type, lhs_value, rhs_type, rhs_value) {
-    if(equals_runtime_ptr[0]) {
-        @call(equals_runtime_ptr[0], lhs_type, lhs_value, rhs_type, rhs_value);
-    } else {
-        tokenizer.error("equals_runtime not implemented!");
-    }
-}
-
-zeroes less_than_runtime_ptr[8];
-
-fn less_than_runtime(lhs_type, lhs_value, rhs_type, rhs_value) {
-    if(less_than_runtime_ptr[0]) {
-        @call(less_than_runtime_ptr[0], lhs_type, lhs_value, rhs_type, rhs_value);
-    } else {
-        tokenizer.error("less_than_runtime not implemented!");
-    }
-}
-
 zeroes add_elf_entry_point_ptr[8];
 
 fn add_elf_entry_point() {
@@ -292,6 +162,36 @@ fn add_elf_entry_point() {
         @call(add_elf_entry_point_ptr[0]);
     } else {
         tokenizer.error("add_elf_entry_point not implemented!");
+    }
+}
+
+zeroes do_inplace_op_ptr[8];
+
+fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
+    if(do_inplace_op_ptr[0]) {
+        @call(do_inplace_op_ptr[0], lhs_type, lhs_value, op, rhs_type, rhs_value);
+    } else {
+        tokenizer.error("do_inplace_op not implemented!");
+    }
+}
+
+zeroes do_binary_op_ptr[8];
+
+fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
+    if(do_binary_op_ptr[0]) {
+        @call(do_binary_op_ptr[0], lhs_type, lhs_value, op, rhs_type, rhs_value);
+    } else {
+        tokenizer.error("do_binary_op not implemented!");
+    }
+}
+
+zeroes do_unary_op_ptr[8];
+
+fn do_unary_op(op, operand_type, operand_value) {
+    if(do_unary_op_ptr[0]) {
+        @call(do_unary_op_ptr[0], op, operand_type, operand_value);
+    } else {
+        tokenizer.error("do_unary_op not implemented!");
     }
 }
 
@@ -314,35 +214,209 @@ zeroes eval_value[8];
 comptime primary_expr_only = 0;
 comptime any_unambigous_expr = 1;
 
-fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, extra_value] {
-    switch(peek_type()) {
+fn eval_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
+    switch(lhs_type) {
+        tokenizer.error("Invalid lhs for inplace op");
+
+    case itypes.global_variable:
+    case itypes.local_variable:
+    case itypes.runtime_reference:
+        do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
+        return;
+    }
+}
+
+fn eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
+    eval_type[0] = itypes.runtime_int;
+
+    loop { // loop only so that we can break it
+        if(lhs_type == itypes.comptime_int) {
+            if(rhs_type == itypes.comptime_int) {
+                eval_type[0] = itypes.comptime_int;
+
+                switch(op) {
+                    @todo("eval_binary_op comptime eval default op");
+
+                case tokenizer.less_than:
+                    eval_value[0] = lhs_value < rhs_value;
+                    endcase;
+
+                case tokenizer.greater_than:
+                    eval_value[0] = lhs_value > rhs_value;
+                    endcase;
+
+                case tokenizer.less_than_equal:
+                    eval_value[0] = lhs_value <= rhs_value;
+                    endcase;
+
+                case tokenizer.greater_than_equal:
+                    eval_value[0] = lhs_value >= rhs_value;
+                    endcase;
+
+                case tokenizer.bitand:
+                    eval_value[0] = lhs_value & rhs_value;
+                    endcase;
+
+                case tokenizer.bitor:
+                    eval_value[0] = lhs_value | rhs_value;
+                    endcase;
+
+                case tokenizer.bitxor:
+                    eval_value[0] = lhs_value ^ rhs_value;
+                    endcase;
+
+                case tokenizer.addition:
+                    eval_value[0] = lhs_value + rhs_value;
+                    endcase;
+
+                case tokenizer.subtraction:
+                    eval_value[0] = lhs_value - rhs_value;
+                    endcase;
+
+                case tokenizer.multiplication:
+                    eval_value[0] = lhs_value * rhs_value;
+                    endcase;
+
+                case tokenizer.modulus:
+                    eval_value[0] = lhs_value % rhs_value;
+                    endcase;
+
+                case tokenizer.division:
+                    eval_value[0] = lhs_value / rhs_value;
+                    endcase;
+                }
+                return;
+            } else {
+                // Operand inversion can help with eliminating comptime_ints from
+                // the lhs, which allows the backend to generate better code
+                switch(op) {
+                    @todo("do_binary_op invert default");
+
+                case tokenizer.less_than:
+                    op = tokenizer.greater_than_equal;
+                    endcase;
+
+                case tokenizer.less_than_equal:
+                    op = tokenizer.greater_than;
+                    endcase;
+
+                case tokenizer.greater_than:
+                    op = tokenizer.less_than_equal;
+                    endcase;
+
+                case tokenizer.greater_than_equal:
+                    op = tokenizer.less_than;
+                    endcase;
+
+                case tokenizer.subtraction:
+                    // First do the inversion
+                    do_binary_op(rhs_type, rhs_value, op, lhs_type, lhs_value);
+
+                    // Then negate the value
+                    do_unary_op(tokenizer.subtraction, itypes.runtime_int);
+                    return;
+
+                // Cannot be inverted
+                case tokenizer.shift_right:
+                case tokenizer.shift_left:
+                case tokenizer.modulus:
+                case tokenizer.division:
+                    break;
+
+                // Commutative, no inversion needed
+                case tokenizer.addition:
+                case tokenizer.multiplication:
+                case tokenizer.bitand:
+                case tokenizer.bitor:
+                case tokenizer.bitxor:
+                case tokenizer.equals:
+                case tokenizer.not_equals:
+                    // endcase;
+                }
+                return do_binary_op(rhs_type, rhs_value, op, lhs_type, lhs_value);
+            }
+        } else {
+            switch(rhs_type) {
+                endcase;
+
+            case itypes.comptime_int:
+                switch(lhs_type) {
+                    endcase;
+
+                case itypes.local_buffer_addr:
+                case itypes.global_buffer_addr:
+                case itypes.function_addr:
+                    eval_type[0] = lhs_type;
+                    eval_value[0] = lhs_value;
+
+                    switch(op) {
+                        endcase;
+
+                    case tokenizer.addition:
+                        eval_value[0] += rhs_value;
+                        return;
+
+                    case tokenizer.subtraction:
+                        eval_value[0] -= rhs_value;
+                        return;
+
+                    case tokenizer.bitor:
+                    case tokenizer.bitand:
+                    case tokenizer.bitxor:
+                    case tokenizer.multiplication:
+                    case tokenizer.division:
+                    case tokenizer.modulus:
+                    case tokenizer.bitnot:
+                        // @TODO: Do these at comptime if PIE disabled
+                    }
+                }
+                // endcase;
+            }
+        }
+    }
+    return do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
+}
+
+fn eval_unary_op(op, operand_type, operand_value) {
+    if(operand_type == itypes.comptime_int) {
+        eval_type[0] = itypes.comptime_int;
+        switch(op) {
+            @todo("eval_unary_op comptime_int default op");
+
+        case tokenizer.subtraction: // Unary arithmetic negation
+            eval_value[0] = -operand_value;
+            return;
+
+        case tokenizer.bitnot: // Unary bitwise negation
+            eval_value[0] = ~operand_value;
+            return;
+        }
+    } else {
+        do_unary_op(op, operand_type, operand_value);
+        eval_type[0] = itypes.runtime_int;
+        return;
+    }
+}
+
+fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value] {
+    op = peek_type();
+
+    switch(op) {
         tokenizer.error("Expected primary expression");
         endcase;
 
     case tokenizer.bitnot:
-        discard();
-        eval_expr(primary_expr_only);
-
-        lhs_type = eval_type[0];
-
-        if(eval_type[0] == itypes.comptime_int) {
-            lhs_value = ~eval_value[0];
-        } else {
-            bitwise_negate();
-        }
-        endcase;
-
     case tokenizer.subtraction:
         discard();
         eval_expr(primary_expr_only);
 
         lhs_type = eval_type[0];
+        lhs_value = eval_value[0];
 
-        if(eval_type[0] == itypes.comptime_int) {
-            lhs_value = -eval_value[0];
-        } else {
-            @todo("eval_expr arith negate");
-        }
+        eval_unary_op(op, lhs_type, lhs_value);
+
+        lhs_type = eval_type[0];
+        lhs_value = eval_value[0];
         endcase;
 
     case tokenizer.open_paren:
@@ -433,6 +507,12 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             switch(eval_type[0]) {
                 @todo("ident square bracket default");
 
+            case itypes.runtime_int:
+                // Runtime index. Darn.
+                do_binary_op(lhs_type, 0, tokenizer.addition, itypes.runtime_int);
+                lhs_type = itypes.runtime_reference;
+                endcase;
+
             case itypes.comptime_int:
                 switch(lhs_type) {
                     @todo("ident square bracket comptime_int default");
@@ -474,11 +554,8 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
                 @todo("global_buffer_addr call");
 
             case itypes.comptime_int:
-                @todo("comptime_int call (?)");
-
             case itypes.function_addr:
                 do_call_addr(lhs_value);
-                lhs_value = 0x41414141;
                 lhs_type = itypes.runtime_int;
                 endcase;
 
@@ -507,8 +584,10 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
     if(primary_expr_only) {
         return;
     } else {
-        switch(peek_type()) {
+        op = peek_type();
+        switch(op) {
             @todo("eval_expr default op");
+
         case tokenizer.closing_paren:
         case tokenizer.closing_curly_brace:
         case tokenizer.closing_square_bracket:
@@ -520,373 +599,84 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, rhs_type, rhs_value, extra_type, e
             return;
 
         case tokenizer.assignment:
-            discard();
-
-            switch(lhs_type) {
-                tokenizer.error("Invalid lhs for in-place op");
-
-            case itypes.local_variable:
-            case itypes.global_variable:
-                eval_expr(primary_expr_only);
-                do_assignment(lhs_type, lhs_value);
-                eval_type[0] = itypes.runtime_int;
-                return;
-            }
-
         case tokenizer.addition_inplace:
-            discard();
-
-            switch(lhs_type) {
-                tokenizer.error("Invalid lhs for in-place op");
-
-            case itypes.local_variable:
-            case itypes.global_variable:
-                eval_expr(primary_expr_only);
-                do_inplace_add(lhs_type, lhs_value);
-                eval_type[0] = itypes.runtime_int;
-                return;
-            }
-
         case tokenizer.subtraction_inplace:
-            discard();
-
-            switch(lhs_type) {
-                tokenizer.error("Invalid lhs for in-place op");
-
-            case itypes.local_variable:
-            case itypes.global_variable:
-                eval_expr(primary_expr_only);
-                do_inplace_sub(lhs_type, lhs_value);
-                eval_type[0] = itypes.runtime_int;
-                return;
-            }
-
         case tokenizer.bitand_inplace:
-            discard();
-
-            switch(lhs_type) {
-                tokenizer.error("Invalid lhs for in-place op");
-
-            case itypes.local_variable:
-            case itypes.global_variable:
-                eval_expr(primary_expr_only);
-                do_inplace_bitand(lhs_type, lhs_value);
-                eval_type[0] = itypes.runtime_int;
-                return;
-            }
-
         case tokenizer.shift_right_inplace:
-            discard();
-
-            switch(lhs_type) {
-                tokenizer.error("Invalid lhs for in-place op");
-
-            case itypes.local_variable:
-            case itypes.global_variable:
-                eval_expr(primary_expr_only);
-                do_inplace_shift_right(lhs_type, lhs_value);
-                eval_type[0] = itypes.runtime_int;
-                return;
-            }
-
         case tokenizer.modulus_inplace:
-            discard();
-
-            switch(lhs_type) {
-                tokenizer.error("Invalid lhs for in-place op");
-
-            case itypes.local_variable:
-            case itypes.global_variable:
-                eval_expr(primary_expr_only);
-                do_inplace_modulus(lhs_type, lhs_value);
-                eval_type[0] = itypes.runtime_int;
-                return;
-            }
-
         case tokenizer.division_inplace:
             discard();
 
-            switch(lhs_type) {
-                tokenizer.error("Invalid lhs for in-place op");
-
-            case itypes.local_variable:
-            case itypes.global_variable:
-                eval_expr(primary_expr_only);
-                do_inplace_division(lhs_type, lhs_value);
-                eval_type[0] = itypes.runtime_int;
-                return;
-            }
-
-        case tokenizer.less_than:
-            discard();
-
-            if(lhs_type == itypes.comptime_int) {
-                eval_expr(primary_expr_only);
-
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = lhs_value < eval_value[0];
-                    return;
-                } else {
-                    rhs_type = eval_type[0];
-                    rhs_value = eval_value[0];
-                    greater_than_equal_runtime_comptime(rhs_type, rhs_value, lhs_value);
-                    return;
-                }
-            } else {
-                if(lhs_type == itypes.runtime_int) {
-                    save_eval_value();
-                } else {}
-
-                eval_expr(primary_expr_only);
-
-                if(eval_type[0] == itypes.comptime_int) {
-                    @todo("eval_expr less_than 2");
-                } else {
-                    less_than_runtime(lhs_type, lhs_value);
-                    eval_type[0] = itypes.runtime_int;
-                    return;
-                }
-            }
-
-        case tokenizer.less_than_equal:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = lhs_value <= eval_value[0];
-                    return;
-                } else {
-                    @todo("eval_expr less_than_equal 1");
-                }
-            } else {
-                @todo("eval_expr less_than_equal 2");
-            }
-
-        case tokenizer.greater_than:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = eval_value[0] < lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr greater_than 1");
-                }
-            } else {
-                @todo("eval_expr greater_than 2");
-            }
-
-        case tokenizer.greater_than_equal:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = eval_value[0] <= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr greater_than_equal 1");
-                }
-            } else {
-                @todo("eval_expr greater_than_equal 2");
-            }
-
-        case tokenizer.equals:
-            discard();
-
-            if(lhs_type == itypes.comptime_int) {
-                eval_expr(primary_expr_only);
-
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = lhs_value == eval_value[0];
-                    return;
-                } else {
-                    rhs_type = eval_type[0];
-                    rhs_value = eval_value[0];
-                    equals_runtime_comptime(rhs_type, rhs_value, lhs_value);
-                    eval_type[0] = itypes.runtime_int;
-                    return;
-                }
-            } else {
-                if(lhs_type == itypes.runtime_int) {
-                    save_eval_value();
-                } else {}
-
-                eval_expr(primary_expr_only);
-
-                rhs_type = eval_type[0];
-                rhs_value = eval_value[0];
-
-                if(eval_type[0] == itypes.comptime_int) {
-                    if(lhs_type == itypes.runtime_int) {
-                        discard_eval_value();
-                    } else {}
-                    equals_runtime_comptime(lhs_type, lhs_value, rhs_value);
-                    eval_type[0] = itypes.runtime_int;
-                    return;
-                } else {
-                    equals_runtime(lhs_type, lhs_value, rhs_type, rhs_value);
-                    eval_type[0] = itypes.runtime_int;
-                    return;
-                }
-            }
-
-        case tokenizer.not_equals:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] = lhs_value != eval_value[0];
-                    return;
-                } else {
-                    @todo("eval_expr not_equals 1");
-                }
-            } else {
-                @todo("eval_expr not_equals 2");
-            }
-
-        case tokenizer.bitor:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] |= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr bitor 1");
-                }
-            } else {
-                @todo("eval_expr bitor 2");
-            }
-
-        case tokenizer.bitxor:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] ^= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr bitxor 1");
-                }
-            } else {
-                @todo("eval_expr bitxor 2");
-            }
-
-        case tokenizer.bitand:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] &= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr bitand 1");
-                }
-            } else {
-                @todo("eval_expr bitand 2");
-            }
-
-        case tokenizer.division:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] /= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr division 1");
-                }
-            } else {
-                @todo("eval_expr division 2");
-            }
-
-        case tokenizer.modulus:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] %= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr modulus 1");
-                }
-            } else {
-                @todo("eval_expr modulus 2");
-            }
-
-        case tokenizer.multiplication:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] *= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr multiplication 1");
-                }
-            } else {
-                @todo("eval_expr multiplication 2");
-            }
-
-        case tokenizer.addition:
-            discard();
-            eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] += lhs_value;
-                    return;
-                } else { }
+            // TODO: Rewind this save next evaluates to comptime int
+            if(lhs_type == itypes.runtime_reference) {
+                save_eval_value();
             } else { }
-            do_addition(lhs_type, lhs_value);
-            eval_type[0] = itypes.runtime_int;
-            return;
 
-        case tokenizer.subtraction:
-            discard();
             eval_expr(primary_expr_only);
-
-            if(lhs_type == itypes.comptime_int) {
-                if(eval_type[0] == itypes.comptime_int) {
-                    eval_value[0] -= lhs_value;
-                    return;
-                } else {
-                    @todo("eval_expr subtraction 1");
-                }
-            } else {
-                @todo("eval_expr subtraction 2");
-            }
-
-        case tokenizer.question_mark:
-            discard();
-            // Ternary operator
-            extra_type = lhs_type;
-            extra_value = lhs_value;
-
-            eval_expr(any_unambigous_expr);
-
-            lhs_type = eval_type[0];
-            lhs_value = eval_value[0];
-
-            expect_token(tokenizer.colon, "Expected `:` after expression");
-            discard();
-
-            eval_expr(any_unambigous_expr);
-
             rhs_type = eval_type[0];
             rhs_value = eval_value[0];
 
-            @todo("eval_expr ternary impl");
+            // Rewind here
+
+            eval_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
+            eval_type[0] = itypes.runtime_int; // TODO: Set undefined type here when available
+            return;
+
+        case tokenizer.less_than:
+        case tokenizer.less_than_equal:
+        case tokenizer.greater_than:
+        case tokenizer.greater_than_equal:
+        case tokenizer.equals:
+        case tokenizer.not_equals:
+        case tokenizer.bitor:
+        case tokenizer.bitxor:
+        case tokenizer.bitand:
+        case tokenizer.division:
+        case tokenizer.modulus:
+        case tokenizer.multiplication:
+        case tokenizer.addition:
+        case tokenizer.subtraction:
+            discard();
+
+            // TODO: Rewind this save next evaluates to comptime int
+            switch(lhs_type) {
+                endcase;
+            case itypes.runtime_int:
+            case itypes.runtime_reference:
+                save_eval_value();
+                // endcase;
+            }
+
+            eval_expr(primary_expr_only);
+            rhs_type = eval_type[0];
+            rhs_value = eval_value[0];
+
+            // Rewind here
+
+            eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
+            return;
+
+        case tokenizer.question_mark:
+            @todo("eval_expr ternary expr");
+        //     discard();
+        //     // Ternary operator
+        //     extra_type = lhs_type;
+        //     extra_value = lhs_value;
+
+        //     eval_expr(any_unambigous_expr);
+
+        //     lhs_type = eval_type[0];
+        //     lhs_value = eval_value[0];
+
+        //     expect_token(tokenizer.colon, "Expected `:` after expression");
+        //     discard();
+
+        //     eval_expr(any_unambigous_expr);
+
+        //     rhs_type = eval_type[0];
+        //     rhs_value = eval_value[0];
+
+        //     @todo("eval_expr ternary impl");
         }
     }
 }
@@ -963,9 +753,11 @@ fn parse_block() [tmp, save0, save1] {
             @write64(continue_addr, save1);
 
             if(@read64(break_was_used)) {
-                @todo("Patch loop break offset");
-
                 @write64(break_was_used, tmp); // Restore old
+
+                tmp = break_addr[0];
+                loop_break_to_here(tmp);
+
                 // The code after us is used!
                 continue;
             } else {

@@ -43,4 +43,7 @@ enum {
 
 	// Some kind of runtime known pointer sized int
 	runtime_int,
+
+	// Somekind of runtime known dereferenced pointer
+	runtime_reference,
 };

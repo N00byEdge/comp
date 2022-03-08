@@ -198,22 +198,10 @@ fn read_int_literal_token_hex() [chr] {
             return;
 
         case '0'...'9':
-            chr -= '0';
-
-            token_value[0] <<= 4;
-            token_value[0] += chr;
-            source.consume(1);
-            continue;
-
         case 'a'...'f':
-            token_value[0] <<= 4;
-            token_value[0] += chr - 'a' + 0xa;
-            source.consume(1);
-            continue;
-
         case 'A'...'F':
             token_value[0] <<= 4;
-            token_value[0] += chr - 'A' + 0xA;
+            token_value[0] += strings.chr_val(chr);
             source.consume(1);
             continue;
         }
@@ -229,10 +217,9 @@ fn read_int_literal_token_decimal() [chr] {
         switch(chr) {
             return;
         case '0'...'9':
-            source.consume(1);
-            chr -= '0';
             token_value[0] *= 10;
-            token_value[0] += chr;
+            token_value[0] += strings.chr_val(chr);
+            source.consume(1);
             continue;
         }
     }
