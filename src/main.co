@@ -59,19 +59,18 @@ fn main(argc, argv) [tmp, fd, out_filename, i] {
         // Get the root source file
         tmp = argv[1 * 8];
         compiler.set_source_file(tmp);
-        compiler.parse_top_level();
-
-        fd = syscalls.open(out_filename, 0x41, syscalls.executable);
 
         i = 3;
         loop {
             if(i < argc) {
                 tmp = argv[i * 8];
-                if(argv[i * 8][0] == '-') {
-                    if(argv[i * 8][1] == 'o') {
+                if(@read8(tmp) == '-') {
+                    tmp += 1;
+                    if(@read8(tmp) == 'o') {
                         out_filename = argv + ((i + 1) * 8);
                         out_filename = out_filename[0];
                         i += 2;
+                        continue;
                     } else { }
                 } else { }
                 printer.print_string("Unknown argument!\n");
@@ -80,6 +79,10 @@ fn main(argc, argv) [tmp, fd, out_filename, i] {
                 break;
             }
         }
+
+        fd = syscalls.open(out_filename, 0x41, syscalls.executable);
+
+        compiler.parse_top_level();
 
         elf.write(fd);
         printer.exit(0);
