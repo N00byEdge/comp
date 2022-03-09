@@ -285,7 +285,7 @@ fn ref_global_variable(regnum, addr) {
     regnum <<= 3;
     regnum |= 0x5;
     code8(regnum);
-    ref_riprel32(addr);
+    ref_riprel32(addr, 0);
 }
 
 fn load_global_variable(regnum, addr) {
@@ -295,7 +295,7 @@ fn load_global_variable(regnum, addr) {
     regnum &= 0x7;
     regnum += 0x5;
     code8(regnum);
-    ref_riprel32(addr);
+    ref_riprel32(addr, 0);
 }
 
 fn put_value_in_reg(regnum, type, value, is_last_evaluated) {
@@ -952,7 +952,7 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                     rexw();
                     code8(0x81);
                     code8(0x3D);
-                    ref_riprel32(lhs_value);
+                    ref_riprel32(lhs_value, 4);
                     code32(rhs_value);
                     endcase;
                 } else {
@@ -1135,7 +1135,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                     rexw();
                     code8(0xC7);
                     code8(0x05);
-                    ref_riprel32(lhs_value);
+                    ref_riprel32(lhs_value, 4);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1489,7 +1489,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 rexw();
                 code8(0x01);
                 code8(0x05);
-                ref_riprel32(lhs_value);
+                ref_riprel32(lhs_value, 0);
                 return;
 
             case itypes.local_variable:

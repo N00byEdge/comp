@@ -208,9 +208,9 @@ fn save_eval_value() {
 
 zeroes add_elf_entry_point_ptr[8];
 
-fn add_elf_entry_point() {
+fn add_elf_entry_point(entry_point) {
     if(add_elf_entry_point_ptr[0]) {
-        @call(add_elf_entry_point_ptr[0]);
+        @call(add_elf_entry_point_ptr[0], entry_point);
     } else {
         tokenizer.error("add_elf_entry_point not implemented!");
     }

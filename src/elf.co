@@ -123,7 +123,11 @@ fn write(fd) [offset, i] {
     add_int(0x3E, 2); // Machine = x86_64
     add_int(1, 4); // Version = Current
 
-    tmp[0] = codegen.add_elf_entry_point();
+    i = codegen.current_file_root[0];
+    i = idents.lookup("main", i);
+    i = idents.node_get_value(i);
+
+    tmp[0] = codegen.add_elf_entry_point(i);
     add_data(tmp, 8);
 
     add_int(layout_phdrs, 8); // phoff
