@@ -155,7 +155,7 @@ fn is_ident_chr(idx) {
 fn parse_identifier(node) [ptr] {
     @assert(is_first_ident_chr(0));
 
-    @write64(token_type, identifier);
+    token_type[0] = identifier;
     ptr = buffer;
 
     loop {
@@ -166,7 +166,7 @@ fn parse_identifier(node) [ptr] {
             continue;
         } else {
             @write8(ptr, 0);
-            @write64(token_value, node);
+            token_value[0] = node;
             return;
         }
     }
@@ -191,7 +191,7 @@ fn attempt_keyword(keyword_text, keyword, node) [idx, chr] {
                 return;
             } else {
                 source.consume(idx);
-                @write64(token_type, keyword);
+                token_type[0] = keyword;
                 return;
             }
         }
@@ -199,8 +199,8 @@ fn attempt_keyword(keyword_text, keyword, node) [idx, chr] {
 }
 
 fn read_int_literal_token_hex() [chr] {
-    @write64(token_type, int_literal);
-    @write64(token_value, 0);
+    token_type[0] = int_literal;
+    token_value[0] = 0;
 
     loop {
         chr = source.peek(0);
@@ -219,8 +219,8 @@ fn read_int_literal_token_hex() [chr] {
 }
 
 fn read_int_literal_token_decimal() [chr] {
-    @write64(token_type, int_literal);
-    @write64(token_value, 0);
+    token_type[0] = int_literal;
+    token_value[0] = 0;
 
     loop {
         chr = source.peek(0);
@@ -251,7 +251,7 @@ fn peek_val(peek) {
 }
 
 fn read_char_literal_token() [chr] {
-    @write64(token_type, int_literal);
+    token_type[0] = int_literal;
     chr = source.peek(0);
 
     if(chr == '\\') {
@@ -292,7 +292,7 @@ fn read_char_literal_token() [chr] {
 }
 
 fn read_string_literal_token() [len] {
-    @write64(token_type, string_literal);
+    token_type[0] = string_literal;
     len = 0;
 
     loop {
@@ -303,7 +303,7 @@ fn read_string_literal_token() [len] {
         case '"':
             source.consume(1);
             buffer[len] = 0;
-            @write64(token_value, len);
+            token_value[0] = len;
             return;
         case '\\':
             switch(source.peek(1)) {

@@ -355,8 +355,8 @@ fn put_value_in_reg(regnum, type, value, is_last_evaluated) {
 }
 
 fn put_evaluated_in_reg(regnum) [value, type] {
-    value = @read64(codegen.eval_value);
-    type = @read64(codegen.eval_type);
+    value = codegen.eval_value[0];
+    type = codegen.eval_type[0];
     put_value_in_reg(regnum, type, value, 1);
 }
 
@@ -474,8 +474,8 @@ fn builtin_memcpy() [tmp] {
 
     codegen.eval_expr();
 
-    if(@read64(codegen.eval_type) == itypes.comptime_int) {
-        tmp = @read64(codegen.eval_value);
+    if(codegen.eval_type[0] == itypes.comptime_int) {
+        tmp = codegen.eval_value[0];
 
         if(tmp <= 24) {
             loop {
@@ -766,12 +766,6 @@ fn builtin_write32() {
     stosd();
 }
 
-fn builtin_write64() {
-    put_arg_in_reg(rdi);
-    put_arg_in_reg(rax);
-    stosq();
-}
-
 fn builtin_read8() {
     put_arg_in_reg(rdi);
     load_reg_value(rax, 0); // Clear upper bits
@@ -788,11 +782,6 @@ fn builtin_read32() {
     put_arg_in_reg(rdi);
     load_reg_value(rax, 0); // Clear upper bits
     lodsd();
-}
-
-fn builtin_read64() {
-    put_arg_in_reg(rdi);
-    lodsq();
 }
 
 fn do_unary_op(op, operand_type, operand_value) {
@@ -1668,12 +1657,10 @@ fn init() {
     builtins.add_builtin("write8", builtin_write8, itypes.builtin_function_codegen);
     builtins.add_builtin("write16", builtin_write16, itypes.builtin_function_codegen);
     builtins.add_builtin("write32", builtin_write32, itypes.builtin_function_codegen);
-    builtins.add_builtin("write64", builtin_write64, itypes.builtin_function_codegen);
 
     builtins.add_builtin("read8", builtin_read8, itypes.builtin_function_codegen);
     builtins.add_builtin("read16", builtin_read16, itypes.builtin_function_codegen);
     builtins.add_builtin("read32", builtin_read32, itypes.builtin_function_codegen);
-    builtins.add_builtin("read64", builtin_read64, itypes.builtin_function_codegen);
 
     builtins.add_builtin("assert", builtin_assert, itypes.builtin_function_codegen);
     builtins.add_builtin("todo", builtin_todo, itypes.builtin_function_codegen);

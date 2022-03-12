@@ -854,7 +854,7 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
 
             // Store away old values
             tmp = break_was_used[0];
-            @write64(break_was_used, 0);
+            break_was_used[0] = 0;
 
             save0 = break_addr[0];
             save1 = continue_addr[0];

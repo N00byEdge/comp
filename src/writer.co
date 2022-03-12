@@ -60,14 +60,14 @@ fn patch32(value, section, addr) {
 fn patch64(value, section, addr) {
     addr -= section_base_addrs[section * 8];
     addr += current_section_buf[section * 8];
-    @write64(addr, value);
+    addr[0] = value;
 }
 
 fn write_generic(value, section, num_bytes) [ptr] {
     if(section != bss) {
         ptr = current_section_buf[section * 8] + section_offset(section);
         @memset(ptr, 0, num_bytes);
-        @write64(ptr, value);
+        ptr[0] = value;
     } else {}
     current_section_bytes[section * 8] += num_bytes;
 }

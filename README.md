@@ -67,17 +67,17 @@ There are a few limitations to simplify the implementation, namely:
 * Circular imports are disallowed
 * You can only access things previously declared/imported
 * Array subscript `my_buffer[idx]` parses the subscript as a byte offset
-* Array subscript `my_buffer[idx]` is always a pointer-length memory reference. For accesses of other sizes, check `@{read,write}{8,16,32,64}` in the builtin list
+* Array subscript `my_buffer[idx]` is always a pointer-length memory reference. For accesses of other sizes, check `@{read,write}{8,16,32}` in the builtin list
 
 ## Builtins
 Builtins are available as `builtin.<builtin name>` and `@<builtin name>` from every file.
 
 Vital for the language:
-* `read{8,16,32,64}(ptr)`
+* `read{8,16,32}(ptr)`
 
   Read from `ptr` with the specified bit size, returns a zero extended pointer length value for every read size.
 
-* `write{8,16,32,64}(ptr, value)`
+* `write{8,16,32}(ptr, value)`
 
   Write `value` to the address specified in `ptr`. Does the write with the size specified.
 

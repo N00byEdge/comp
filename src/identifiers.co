@@ -95,11 +95,12 @@ comptime value_offset = attribute_offset + 4;
 fn node_get_value(node) {
     node = node_addr(node);
     node += value_offset;
-    return @read64(node);
+    return node[0];
 }
 
 fn node_set_value(node, value) {
     node = node_addr(node);
     node += value_offset;
-    return @write64(node, value);
+    node[0] = value;
+    return;
 }
