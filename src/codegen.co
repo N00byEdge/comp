@@ -43,6 +43,8 @@ zeroes switch_table[8]; // offset into rodata
 zeroes switch_default_addr[8];
 zeroes endcase_addr[8];
 zeroes endcase_was_used[8];
+zeroes return_was_used[8];
+
 
 comptime rewind_buffer_local_size = 0
     + (@size_of(continue_addr)
@@ -77,6 +79,8 @@ fn rewind_restore(rewind_buffer) [ptr, len] {
 
     writer.current_section_bytes[writer.rodata * 8] = rewind_buffer[rewind_buffer_local_size + (8 * 1)];
 }
+
+zeroes expr_returns[8];
 
 fn itype_is_in_reg(lhs_type) {
     if(lhs_type == itypes.runtime_reference) {
@@ -470,7 +474,7 @@ fn eval_unary_op(op, operand_type, operand_value) {
     }
 }
 
-fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_buffer[rewind_buffer_size]] {
+fn eval_expr(expr_mode) [lhs_type, lhs_value, lhs_attr, op, rhs_type, rhs_value, rewind_buffer[rewind_buffer_size]] {
     op = peek_type();
 
     switch(op) {
@@ -521,6 +525,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
     case tokenizer.identifier:
         lhs_value = peek_value();
         lhs_type = idents.node_get_type(lhs_value);
+        lhs_attr = idents.node_get_attribute(lhs_value);
 
         discard();
 
@@ -534,6 +539,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
                     discard();
 
                     lhs_type = idents.node_get_type(lhs_value);
+                    lhs_attr = idents.node_get_attribute(lhs_value);
 
                     switch(lhs_type) {
                         break;
@@ -629,8 +635,9 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
             case itypes.global_buffer_addr:
                 @todo("global_buffer_addr call");
 
-            case itypes.comptime_int:
             case itypes.function_addr:
+                expr_returns[0] &= lhs_attr; // Expression returns if the function does
+            case itypes.comptime_int:
                 do_call_addr(lhs_value);
                 lhs_type = itypes.runtime_int;
                 endcase;
@@ -685,6 +692,11 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
         case tokenizer.multiplication_inplace:
         case tokenizer.modulus_inplace:
         case tokenizer.division_inplace:
+            if(expr_returns[0]) {
+            } else {
+                tokenizer.error("Left hand side of expression doesn't return!");
+            }
+
             discard();
 
             if(itype_is_in_reg(lhs_type)) {
@@ -702,6 +714,11 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
 
             eval_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
             eval_type[0] = itypes.runtime_int; // TODO: Set undefined type here when available
+
+            if(expr_returns[0]) {
+            } else {
+                tokenizer.error("Right hand side of expression doesn't return!");
+            }
             return;
 
         case tokenizer.less_than:
@@ -718,6 +735,11 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
         case tokenizer.multiplication:
         case tokenizer.addition:
         case tokenizer.subtraction:
+            if(expr_returns[0]) {
+            } else {
+                tokenizer.error("Left hand side of expression doesn't return!");
+            }
+
             discard();
 
             if(itype_is_in_reg(lhs_type)) {
@@ -734,6 +756,11 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
             } else { }
 
             eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
+
+            if(expr_returns[0]) {
+            } else {
+                tokenizer.error("Right hand side of expression doesn't return!");
+            }
             return;
 
         case tokenizer.question_mark:
@@ -762,11 +789,22 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
 }
 
 fn eval_comptime_expr(mode) {
+    expr_returns[0] = 1;
     eval_expr(mode);
     if(eval_type[0] == itypes.comptime_int) {
         return eval_value[0];
     } else {
         tokenizer.error("Non-comptime expr eval!");
+    }
+}
+
+fn eval_returning_expr(mode) {
+    expr_returns[0] = 1;
+    eval_expr(mode);
+    if(expr_returns[0]) {
+        return;
+    } else {
+        tokenizer.error("Expression does not return!");
     }
 }
 
@@ -792,6 +830,7 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
     loop {
         switch(peek_type()) {
             // Anything else is probably an expression.
+            expr_returns[0] = 1;
             eval_expr(any_unambigous_expr);
 
             expect_token(tokenizer.semicolon, "Expected `;` after expression");
@@ -807,9 +846,11 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
 
             }
 
-            // @TODO: Figure out if expression (function call) was noreturn,
-            // and if so, endcase instead of continuing
-            continue;
+            if(expr_returns[0]) {
+                continue;
+            } else {
+                endcase;
+            }
 
         case tokenizer.keyword_case:
             discard();
@@ -894,7 +935,7 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
             expect_token(tokenizer.open_paren, "Expected `(` after `if`");
             discard();
 
-            eval_expr(any_unambigous_expr);
+            eval_returning_expr(any_unambigous_expr);
 
             expect_token(tokenizer.closing_paren, "Expected `)` after if conditional");
             discard();
@@ -944,7 +985,7 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
             expect_token(tokenizer.open_paren, "Expected `(` after `switch`");
             discard();
 
-            eval_expr(any_unambigous_expr);
+            eval_returning_expr(any_unambigous_expr);
 
             expect_token(tokenizer.closing_paren, "Expected `)` after if conditional");
             discard();
@@ -1000,7 +1041,7 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
         case tokenizer.keyword_return:
             discard();
             if(peek_type() != tokenizer.semicolon) {
-                eval_expr();
+                eval_returning_expr(any_unambigous_expr);
             } else {
                 // This should make the backend not produce any code *crosses fingers*
                 eval_type[0] = itypes.runtime_int;
@@ -1008,6 +1049,7 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
             return_evaluated();
             expect_token(tokenizer.semicolon, "Expected `;` after `return` statment");
             discard();
+            return_was_used[0] = 1;
             endcase;
 
         case tokenizer.closing_curly_brace:

@@ -261,31 +261,40 @@ fn clear_local_vars() [node] {
     clear_local_vars_in(node);
 }
 
-fn parse_function() [fn_ident, root, fn_addr, can_be_exited] {
+fn parse_function() [fn_ident, root, fn_addr, fn_attrs] {
     codegen.discard();
+
+    codegen.return_was_used[0] = 0;
 
     fn_ident = codegen.expect_token(tokenizer.identifier, "Expected identifier after `fn`");
 
     fn_addr = writer.code_addr();
     idents.node_set_type(fn_ident, itypes.function_addr);
     idents.node_set_value(fn_ident, fn_addr);
+    idents.node_set_attribute(fn_ident, 1); // We assume it returns for recursion purposes
 
     codegen.add_symbol(fn_ident);
     codegen.discard();
 
-    can_be_exited = read_stack_frame();
+    read_stack_frame();
 
     root = codegen.current_file_root[0];
-    codegen.parse_block(root);
+    // Can be exited by falling out of block
+    fn_attrs = codegen.parse_block(root);
 
     codegen.expect_token(tokenizer.closing_curly_brace, "Expected `}` after function body");
     codegen.discard();
 
     // TODO: Only do this if the block end can be reached
     codegen.eval_type[0] = itypes.runtime_int;
-    if(can_be_exited) {
+    if(fn_attrs) {
         codegen.return_evaluated();
     } else { }
+
+    // Can also be exited by `return` statement
+    fn_attrs |= codegen.return_was_used[0];
+
+    idents.node_set_attribute(fn_ident, fn_attrs);
 
     clear_local_vars();
 }

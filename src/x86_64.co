@@ -361,7 +361,7 @@ fn put_evaluated_in_reg(regnum) [value, type] {
 }
 
 fn put_arg_in_reg(regnum) {
-    codegen.eval_expr(codegen.any_unambigous_expr);
+    codegen.eval_returning_expr(codegen.any_unambigous_expr);
     put_evaluated_in_reg(regnum);
 
     if(codegen.peek_type() == tokenizer.comma) {
@@ -472,7 +472,7 @@ fn builtin_memcpy() [tmp] {
     put_arg_in_reg(rdi);
     put_arg_in_reg(rsi);
 
-    codegen.eval_expr();
+    codegen.eval_returning_expr(codegen.any_unambigous_expr);
 
     if(codegen.eval_type[0] == itypes.comptime_int) {
         tmp = codegen.eval_value[0];
@@ -725,6 +725,8 @@ fn builtin_todo() {
     load_reg_value(rsi, 0);
     load_reg_value(rdx, 0);
 
+    codegen.expr_returns[0] = 0;
+
     // jmp assert_fail
 }
 
@@ -733,11 +735,13 @@ fn builtin_panic() {
     load_reg_value(rsi, 0);
     load_reg_value(rdx, 0);
 
+    codegen.expr_returns[0] = 0;
+
     // jmp assert_fail
 }
 
 fn builtin_assert() {
-    codegen.eval_expr();
+    codegen.eval_expr(codegen.any_unambigous_expr);
     put_evaluated_in_reg(rax);
     put_opt_arg_in_reg(rdi);
     load_reg_value(rsi, 0);
