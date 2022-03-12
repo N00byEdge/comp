@@ -286,9 +286,8 @@ fn read_char_literal_token() [chr] {
         }
         @todo("read_char_literal_token escape");
     } else {
-        @write64(token_value, chr);
         source.consume(2);
-        return;
+        return chr;
     }
 }
 
