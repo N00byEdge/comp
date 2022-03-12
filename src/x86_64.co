@@ -1333,7 +1333,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 rexw();
                 code8(0xC1);
                 code8(0xAD);
-                ref_riprel32(lhs_value, 1);
+                neg_offset(lhs_value, 1);
                 code8(rhs_value);
                 return;
 
