@@ -621,7 +621,6 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, lhs_attr, op, rhs_type, rhs_value,
 
             switch(lhs_type) {
                 @todo("call ident default case");
-                endcase;
 
             case itypes.local_variable:
                 @todo("local_variable call");
