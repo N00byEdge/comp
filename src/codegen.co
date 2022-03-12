@@ -998,7 +998,7 @@ fn parse_block() [tmp, save0, save1, save2] {
             endcase;
 
         case tokenizer.closing_curly_brace:
-            return;
+            return 0;
         }
 
         // Loop here util we have non-dead code (case comes around and enters here or we exit scope)
@@ -1016,7 +1016,7 @@ fn parse_block() [tmp, save0, save1, save2] {
                 break;
 
             case tokenizer.closing_curly_brace:
-                return;
+                return 1;
             }
         }
         continue;
