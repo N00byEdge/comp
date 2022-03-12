@@ -341,7 +341,6 @@ fn parse_top_level() {
 
         case tokenizer.keyword_fn:
             parse_function();
-            writer.dump();
             continue;
 
         case tokenizer.keyword_enum:
