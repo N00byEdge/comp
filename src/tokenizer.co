@@ -17,6 +17,7 @@ fn error(fail_message) [tmp] {
     writer.dump();
     printer.print_string(fail_message);
     printer.putchar('\n');
+    log_context();
     printer.exit(1);
     unreachable;
 }
