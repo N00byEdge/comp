@@ -40,6 +40,7 @@ zeroes break_addr[8];
 zeroes break_was_used[8];
 
 zeroes switch_table[8]; // offset into rodata
+zeroes switch_default_addr[8];
 zeroes endcase_addr[8];
 zeroes endcase_was_used[8];
 
@@ -48,9 +49,10 @@ comptime rewind_buffer_local_size = 0
     + (@size_of(break_addr)
     + (@size_of(break_was_used)
     + (@size_of(switch_table)
+    + (@size_of(switch_default_addr)
     + (@size_of(endcase_addr)
     + (@size_of(endcase_was_used)
-))))));
+)))))));
 
 comptime rewind_buffer_size = rewind_buffer_local_size + (8 * 2);
 
@@ -765,16 +767,18 @@ comptime max_switch_values = 0x80;
 comptime switch_table_entry_size = 4;
 comptime switch_table_size = switch_table_entry_size * max_switch_values;
 
-fn set_switch_case_here(case_value) {
+fn set_switch_case_here(case_value) [ptr, offset] {
     if(case_value >= max_switch_values) {
         printer.log_hex("Case value", case_value);
         tokenizer.error("Switch case value out of range!");
     } else {
-        // ...
+        offset = writer.code_addr() - switch_default_addr[0];
+        ptr = switch_table[0] + (case_value * switch_table_entry_size);
+        writer.patch32(offset, writer.rodata, ptr);
     }
 }
 
-fn parse_block() [tmp, save0, save1] {
+fn parse_block() [tmp, save0, save1, save2] {
     expect_token(tokenizer.open_curly_brace, "Expected `{` at the start of block");
     discard();
     
@@ -931,10 +935,12 @@ fn parse_block() [tmp, save0, save1] {
             tmp = switch_table[0];
             save0 = endcase_was_used[0];
             save1 = endcase_addr[0];
+            save2 = switch_default_addr[0];
 
             endcase_was_used[0] = 0;
             endcase_addr[0] = make_switch();
-            switch_table[0] = writer.section_offset(writer.rodata);
+            switch_table[0] = writer.section_addr(writer.rodata);
+            switch_default_addr[0] = writer.code_addr();
 
             writer.write_generic(0, writer.rodata, switch_table_size);
 
@@ -946,6 +952,7 @@ fn parse_block() [tmp, save0, save1] {
             switch_table[0] = tmp;
             endcase_was_used[0] = save0;
             endcase_addr[0] = save1;
+            switch_default_addr[0] = save2;
 
             // @TODO: Check if endcase was used or block was fell through to determine deadness
             // after switch() {}
