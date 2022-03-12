@@ -1176,7 +1176,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                     rexw();
                     code8(0x81);
                     code8(0x05);
-                    neg_offset(lhs_value);
+                    ref_riprel32(lhs_value, 4);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1219,7 +1219,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                     rexw();
                     code8(0x81);
                     code8(0x2D);
-                    neg_offset(lhs_value);
+                    ref_riprel32(lhs_value, 4);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1262,7 +1262,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                     rexw();
                     code8(0x81);
                     code8(0x25);
-                    neg_offset(lhs_value);
+                    ref_riprel32(lhs_value, 4);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1294,7 +1294,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                     rexw();
                     code8(0x81);
                     code8(0x0D);
-                    neg_offset(lhs_value);
+                    ref_riprel32(lhs_value, 4);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1340,7 +1340,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 rexw();
                 code8(0xC1);
                 code8(0xAD);
-                neg_offset(lhs_value);
+                ref_riprel32(lhs_value, 1);
                 code8(rhs_value);
                 return;
 
@@ -1355,7 +1355,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 rexw();
                 code8(0xC1);
                 code8(0x25);
-                neg_offset(lhs_value);
+                ref_riprel32(lhs_value, 1);
                 code8(rhs_value);
                 return;
 
