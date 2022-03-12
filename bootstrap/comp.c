@@ -348,7 +348,7 @@ u64 eval_comptime_with_precedence(int precedence) {
         case 'A' ... 'Z':
         case '@':
         case '_':
-            tmp = read_node_name(0);
+            tmp = read_node_name();
             if(!tmp) {
                 assert(!"Unknown identifier!");
             }
@@ -601,6 +601,7 @@ u64 emit_jmp_fixup() {
 
 // Returns the number of args loaded into registers
 int put_fargs_in_regs(u32 *reg_list) {
+	struct trie_node_value *var_name_node;
     int arg_idx = 0;
 
     // Possible value in a function call:
@@ -660,7 +661,7 @@ int put_fargs_in_regs(u32 *reg_list) {
             case '@':
             case '_':
                 // Identifier, check type!
-                struct trie_node_value *var_name_node = read_node_name(1);
+                var_name_node = read_node_name();
                 collapse_var_name_eval(&var_name_node);
                 switch(var_name_node->type) {
                 case TRIE_TYPE_FUNCTION_LOCAL:
@@ -774,6 +775,7 @@ int put_fargs_in_regs(u32 *reg_list) {
 }
 
 void parse_eval_with_precedence(int precedence, struct trie_node_value *var_name_node) {
+	u64 offset;
     skip_whitespace();
 
     if(var_name_node) {
@@ -833,17 +835,17 @@ void parse_eval_with_precedence(int precedence, struct trie_node_value *var_name
             case 'A'...'Z':
             case '@':
             case '_':
-                var_name_node = read_node_name(1);
+                var_name_node = read_node_name();
                 collapse_var_name_eval(&var_name_node);
 
                 switch(var_name_node->type) {
                     case TRIE_TYPE_FUNCTION_LOCAL:
-                        u64 rbp_offset = -var_name_node->value;
-                        // lea rax, [rbp + rbp_offset]
+                        offset = -var_name_node->value;
+                        // lea rax, [rbp + offset]
                         write8(0x48, SECTION_TEXT);
                         write8(0x8D, SECTION_TEXT);
                         write8(0x85, SECTION_TEXT);
-                        write32(rbp_offset, SECTION_TEXT);
+                        write32(offset, SECTION_TEXT);
                         break;
 
                     case TRIE_TYPE_GLOBAL_BUFFER:
@@ -947,7 +949,7 @@ void parse_eval_with_precedence(int precedence, struct trie_node_value *var_name
             default: TODO
 
             case TRIE_TYPE_FUNCTION_OFFSET:
-                u64 foffset = var_name_node->value;
+                offset = var_name_node->value;
 
                 put_fargs_in_regs(arg_regs);
 
@@ -959,16 +961,17 @@ void parse_eval_with_precedence(int precedence, struct trie_node_value *var_name
 
                 // Woop, call the function!
                 write8(0xE8, SECTION_TEXT);
-                riprel_text_off_32(foffset);
+                riprel_text_off_32(offset);
 
                 // pop rbx
                 write8(0x5B, SECTION_TEXT);
                 break;
 
-            case TRIE_TYPE_BUILTIN_FUNCTION:
-                void (*fptr)(int) = (void(*)(int))var_name_node->value;
-                fptr(1);
-                break;
+            case TRIE_TYPE_BUILTIN_FUNCTION: {
+	                void (*fptr)(int) = (void(*)(int))var_name_node->value;
+	                fptr(1);
+	                break;
+	            }
             }
             break;
     }
@@ -1647,7 +1650,7 @@ void parse_primary_expression_with_node(struct trie_node_value *lhs) {
 
     assert(lhs);
     switch(lhs->type) {
-        case TRIE_TYPE_FUNCTION_LOCAL:
+        case TRIE_TYPE_FUNCTION_LOCAL: {
             // Load variable into `rbx`
             u64 rbp_offset = -lhs->value;
             // lea rbx, [rbp + rbp_offset]
@@ -1658,6 +1661,7 @@ void parse_primary_expression_with_node(struct trie_node_value *lhs) {
 
             do_op_qword(1);
             break;
+        }
 
         case TRIE_TYPE_GLOBAL_BUFFER:
             // Load global addr into `rbx`
@@ -1683,7 +1687,7 @@ void parse_primary_expression_with_node(struct trie_node_value *lhs) {
 }
 
 void parse_primary_expression() {
-    struct trie_node_value *var_name_node = read_node_name(1);
+    struct trie_node_value *var_name_node = read_node_name();
     parse_primary_expression_with_node(var_name_node);
 }
 
@@ -2059,7 +2063,7 @@ void parse_function_decl() {
         // Store the variable at `rbp - stack_offset`
         u32 arg_reg = arg_regs[arg_idx++];
 
-        struct trie_node_value *var_name_node = read_node_name(1);
+        struct trie_node_value *var_name_node = read_node_name();
         assert(var_name_node->type == TRIE_TYPE_NONE);
 
         // Store the variable to our stack
@@ -2097,7 +2101,7 @@ void parse_function_decl() {
                 break;
             }
 
-            struct trie_node_value *var_name_node = read_node_name(1);
+            struct trie_node_value *var_name_node = read_node_name();
             assert(var_name_node->type == TRIE_TYPE_NONE);
 
             // We don't initialize the variable, that's up to the user,
@@ -2202,7 +2206,7 @@ void parse_file() {
                     break;
                 }
 
-                struct trie_node_value *name_node = read_node_name(1);
+                struct trie_node_value *name_node = read_node_name();
                 assert(name_node->type == TRIE_TYPE_NONE);
 
                 name_node->type = TRIE_TYPE_COMPTIME;
@@ -2235,7 +2239,7 @@ void parse_file() {
             // Function decl
 
             skip_whitespace();
-            struct trie_node_value *fn_name_node = read_node_name(1);
+            struct trie_node_value *fn_name_node = read_node_name();
             assert(fn_name_node->type == TRIE_TYPE_NONE);
 
             fn_name_node->type = TRIE_TYPE_FUNCTION_OFFSET;
@@ -2261,7 +2265,7 @@ void parse_file() {
 
             // Make a new file node
             struct trie_node_value *filename_node = get_or_create_node_value(filename_buf, 0);
-            struct trie_node_value *alias_node = read_node_name(1);
+            struct trie_node_value *alias_node = read_node_name();
             assert(alias_node->type == TRIE_TYPE_NONE);
             skip_whitespace();
             assert(consume() == ';');
@@ -2308,7 +2312,7 @@ void parse_file() {
             assert(consume() == 'e');
             assert(consume() == 's');
 
-            struct trie_node_value *var_addr = read_node_name(1);
+            struct trie_node_value *var_addr = read_node_name();
             assert(var_addr->type == TRIE_TYPE_NONE);
 
             skip_whitespace(); assert(consume() == '[');
@@ -2336,7 +2340,7 @@ void parse_file() {
             assert(consume() == 'e');
 
             skip_whitespace();
-            struct trie_node_value *decl_name_node = read_node_name(1);
+            struct trie_node_value *decl_name_node = read_node_name();
             assert(decl_name_node->type == TRIE_TYPE_NONE);
 
             // Please use the syntax `comptime my_identifier = <comptime expr>;`
@@ -2632,10 +2636,11 @@ u64 builtin_write64(int context) {
 }
 
 u64 builtin_size_of(int context) {
+	struct trie_node_value *arg;
     switch(context) {
     case 0:
         // Read argument and collapse
-        struct trie_node_value *arg = read_node_name(1);
+        arg = read_node_name();
         collapse_var_name_eval(&arg);
 
         skip_whitespace();
