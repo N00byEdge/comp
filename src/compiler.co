@@ -261,7 +261,7 @@ fn clear_local_vars() [node] {
     clear_local_vars_in(node);
 }
 
-fn parse_function() [fn_ident, root, fn_addr] {
+fn parse_function() [fn_ident, root, fn_addr, can_be_exited] {
     codegen.discard();
 
     fn_ident = codegen.expect_token(tokenizer.identifier, "Expected identifier after `fn`");
@@ -273,7 +273,7 @@ fn parse_function() [fn_ident, root, fn_addr] {
     codegen.add_symbol(fn_ident);
     codegen.discard();
 
-    read_stack_frame();
+    can_be_exited = read_stack_frame();
 
     root = codegen.current_file_root[0];
     codegen.parse_block(root);
@@ -283,7 +283,9 @@ fn parse_function() [fn_ident, root, fn_addr] {
 
     // TODO: Only do this if the block end can be reached
     codegen.eval_type[0] = itypes.runtime_int;
-    codegen.return_evaluated();
+    if(can_be_exited) {
+        codegen.return_evaluated();
+    } else { }
 
     clear_local_vars();
 }

@@ -785,7 +785,7 @@ fn set_switch_case_here(case_value) [ptr, offset] {
     }
 }
 
-fn parse_block() [tmp, save0, save1, save2] {
+fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
     expect_token(tokenizer.open_curly_brace, "Expected `{` at the start of block");
     discard();
     
@@ -853,26 +853,26 @@ fn parse_block() [tmp, save0, save1, save2] {
             discard();
 
             // Store away old values
-            tmp = @read64(break_was_used);
+            tmp = break_was_used[0];
             @write64(break_was_used, 0);
 
-            save0 = @read64(break_addr);
-            save1 = @read64(continue_addr);
+            save0 = break_addr[0];
+            save1 = continue_addr[0];
 
             // Create new break fixup
             break_addr[0] = make_loop_break();
             continue_addr[0] = writer.code_addr();
 
-            parse_block();
+            can_be_exited = parse_block();
 
             expect_token(tokenizer.closing_curly_brace, "Expected `}` after loop body");
             discard();
 
-            @write64(break_addr, save0);
-            @write64(continue_addr, save1);
+            break_addr[0] = save0;
+            continue_addr[0] = save1;
 
-            if(@read64(break_was_used)) {
-                @write64(break_was_used, tmp); // Restore old
+            if(break_was_used[0]) {
+                break_was_used[0] = tmp; // Restore old
 
                 tmp = break_addr[0];
                 loop_break_to_here(tmp);
@@ -880,9 +880,13 @@ fn parse_block() [tmp, save0, save1, save2] {
                 // The code after us is used!
                 continue;
             } else {
-                @write64(break_was_used, tmp); // Restore old
-                // The code after us cannot be reached!
-                endcase;
+                break_was_used[0] = tmp; // Restore old
+                // Can we reach the code after this?
+                if(can_be_exited) {
+                    endcase;
+                } else {
+                    continue;
+                }
             }
 
         case tokenizer.keyword_if:
@@ -900,7 +904,7 @@ fn parse_block() [tmp, save0, save1, save2] {
             } else {
                 tmp = if_condition();
 
-                parse_block();
+                can_be_exited = parse_block();
 
                 expect_token(tokenizer.closing_curly_brace, "Expected `}` after if body");
                 discard();
@@ -909,9 +913,9 @@ fn parse_block() [tmp, save0, save1, save2] {
                     discard();
 
                     // Jump at the end of the taken branch to after else
-                    save0 = else_block_start(tmp);
+                    save0 = else_block_start(tmp, can_be_exited);
 
-                    parse_block();
+                    save1 = parse_block();
 
                     expect_token(tokenizer.closing_curly_brace, "Expected `}` after else body");
                     discard();
@@ -919,14 +923,20 @@ fn parse_block() [tmp, save0, save1, save2] {
                     // Else falls through
 
                     // Patch end of taken jmp to here
-                    else_block_end(save0);
+                    if(can_be_exited) {
+                        else_block_end(save0);
+                        continue;
+                    } else {
+                        if(save1) {
+                            continue;
+                        } else {
+                            endcase;
+                        }
+                    }
                 } else {
                     no_else_block(tmp);
+                    continue;
                 }
-
-                // @TODO: Check which of the branches can exit the scopes, and do `endcase;` depending
-                // on if both can
-                continue;
             }
 
         case tokenizer.keyword_switch:
@@ -951,19 +961,22 @@ fn parse_block() [tmp, save0, save1, save2] {
 
             writer.write_generic(0, writer.rodata, switch_table_size);
 
-            parse_block();
+            can_be_exited = parse_block();
 
             expect_token(tokenizer.closing_curly_brace, "Expected `}` after switch block");
             discard();
 
             switch_table[0] = tmp;
-            endcase_was_used[0] = save0;
             endcase_addr[0] = save1;
             switch_default_addr[0] = save2;
 
-            // @TODO: Check if endcase was used or block was fell through to determine deadness
-            // after switch() {}
-            continue;
+            if(endcase_was_used[0] | can_be_exited) {
+                endcase_was_used[0] = save0;
+                continue;
+            } else {
+                endcase_was_used[0] = save0;
+                endcase;
+            }
 
         case tokenizer.keyword_endcase:
             discard();
@@ -998,7 +1011,7 @@ fn parse_block() [tmp, save0, save1, save2] {
             endcase;
 
         case tokenizer.closing_curly_brace:
-            return 0;
+            return 1;
         }
 
         // Loop here util we have non-dead code (case comes around and enters here or we exit scope)
@@ -1016,7 +1029,7 @@ fn parse_block() [tmp, save0, save1, save2] {
                 break;
 
             case tokenizer.closing_curly_brace:
-                return 1;
+                return 0;
             }
         }
         continue;
