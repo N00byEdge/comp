@@ -78,6 +78,25 @@ fn rewind_restore(rewind_buffer) [ptr, len] {
     writer.current_section_bytes[writer.rodata * 8] = rewind_buffer[rewind_buffer_local_size + (8 * 1)];
 }
 
+fn itype_is_in_reg(lhs_type) {
+    if(lhs_type == itypes.runtime_reference) {
+        return 1;
+    } else { }
+    if(lhs_type == itypes.runtime_int) {
+        return 1;
+    } else { }
+    return 0;
+}
+
+fn should_rewind_lhs_save(lhs_type, rhs_type) {
+    if(itype_is_in_reg(lhs_type)) {
+        // We should rewind the save if the rhs never clobbered
+        return itype_is_in_reg(rhs_type) == 0;
+    } else {
+        return 0;
+    }
+}
+
 zeroes add_symbol_ptr[8];
 
 fn add_symbol(num_args, local_var_space, total_stack_space) {
@@ -376,7 +395,7 @@ fn eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 case tokenizer.division:
                     break;
 
-                // Commutative, no inversion needed
+                // Commutative, keep operator same
                 case tokenizer.addition:
                 case tokenizer.multiplication:
                 case tokenizer.bitand:
@@ -668,7 +687,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
         case tokenizer.division_inplace:
             discard();
 
-            if(lhs_type == itypes.runtime_reference) {
+            if(itype_is_in_reg(lhs_type)) {
                 rewind_save(rewind_buffer);
                 save_eval_value();
             } else { }
@@ -677,10 +696,8 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
             rhs_type = eval_type[0];
             rhs_value = eval_value[0];
 
-            if(lhs_type == itypes.runtime_reference) {
-                if(rhs_type == itypes.comptime_int) {
-                    rewind_restore(rewind_buffer);
-                } else { }
+            if(should_rewind_lhs_save(lhs_type, rhs_type)) {
+                rewind_restore(rewind_buffer);
             } else { }
 
             eval_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value);
@@ -703,27 +720,17 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, op, rhs_type, rhs_value, rewind_bu
         case tokenizer.subtraction:
             discard();
 
-            switch(lhs_type) {
-                endcase;
-            case itypes.runtime_int:
-            case itypes.runtime_reference:
+            if(itype_is_in_reg(lhs_type)) {
                 rewind_save(rewind_buffer);
                 save_eval_value();
-                // endcase;
-            }
+            } else { }
 
             eval_expr(primary_expr_only);
             rhs_type = eval_type[0];
             rhs_value = eval_value[0];
 
-            if(rhs_type == itypes.comptime_int) {
-                switch(lhs_type) {
-                    endcase;
-                case itypes.runtime_int:
-                case itypes.runtime_reference:
-                    rewind_restore(rewind_buffer);
-                    // endcase;
-                }
+            if(should_rewind_lhs_save(lhs_type, rhs_type)) {
+                rewind_restore(rewind_buffer);
             } else { }
 
             eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value);

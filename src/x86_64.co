@@ -908,7 +908,6 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 @todo("x86_64 do_binary_op comptime compare default lhs");
 
             case itypes.runtime_reference:
-                pop_reg(rax);
                 load_reg_relative_to_reg(rax, rax, 0);
                 if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
                     // cmp rax, imm32
@@ -922,7 +921,6 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
 
             case itypes.runtime_int:
-                pop_reg(rax);
                 if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
                     // cmp rax, imm32
                     rexw();
