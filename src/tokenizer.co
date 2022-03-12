@@ -4,15 +4,18 @@ import "src/source.co" source;
 import "src/strings.co" strings;
 import "src/writer.co" writer;
 
-fn error(fail_message) [tmp] {
-    writer.dump();
-    printer.print_string(fail_message);
-    printer.putchar('\n');
+fn log_context() [tmp] {
     printer.print_string("while parsing ");
     printer.print_string(source.file_name);
     printer.putchar(':');
     tmp = source.current_line[0];
     printer.print_decimal(tmp);
+    printer.putchar('\n');
+}
+
+fn error(fail_message) [tmp] {
+    writer.dump();
+    printer.print_string(fail_message);
     printer.putchar('\n');
     printer.exit(1);
     unreachable;
