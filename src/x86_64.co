@@ -1145,7 +1145,7 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
 fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
     if(rhs_type == itypes.comptime_int) {
-         switch(op) {
+        switch(op) {
             @todo("x86_64 do_inplace_op comptime default op");
 
         case tokenizer.assignment:
