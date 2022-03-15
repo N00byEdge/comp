@@ -1113,7 +1113,7 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
         code8(0xC0);
         endcase;
 
-    case tokenizer.equals:
+    case tokenizer.not_equals:
         // setne al
         code8(0x0F);
         code8(0x95);
