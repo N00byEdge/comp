@@ -986,18 +986,15 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
         switch(op) {
             @todo("x86_64 do_binary_op runtime default op");
 
+        case tokenizer.modulus:
+        case tokenizer.division:
+            load_reg_value(rdx, 0); // Upper half
         case tokenizer.addition:
         case tokenizer.subtraction:
         case tokenizer.multiplication:
-        case tokenizer.modulus:
-        case tokenizer.division:
         case tokenizer.bitand:
         case tokenizer.bitor:
         case tokenizer.bitxor:
-            put_value_in_reg(rdx, rhs_type, rhs_value, 1);
-            put_value_in_reg(rax, lhs_type, lhs_value, 0);
-            endcase;
-
         case tokenizer.shift_left:
         case tokenizer.shift_right:
             put_value_in_reg(rcx, rhs_type, rhs_value, 1);
@@ -1026,31 +1023,31 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
     switch(op) {
     case tokenizer.addition:
-        // add rax, rdx
+        // add rax, rcx
         rexw();
         code8(0x01);
-        code8(0xD0);
+        code8(0xC8);
         return;
 
     case tokenizer.subtraction:
-        // sub rax, rdx
+        // sub rax, rcx
         rexw();
         code8(0x29);
-        code8(0xD0);
+        code8(0xC8);
         return;
 
     case tokenizer.multiplication:
-        // mul rdx
+        // mul rcx
         rexw();
         code8(0xF7);
-        code8(0xE2);
+        code8(0xE1);
         return;
 
     case tokenizer.modulus:
-        // div rdx
+        // div rcx
         rexw();
         code8(0xF7);
-        code8(0xF2);
+        code8(0xF1);
 
         // mov rax, rdx
         rexw();
@@ -1059,31 +1056,31 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
         return;
 
     case tokenizer.division:
-        // div rdx
+        // div rcx
         rexw();
         code8(0xF7);
-        code8(0xF2);
+        code8(0xF1);
         return;
 
     case tokenizer.bitand:
         // and rax, rdx
         rexw();
         code8(0x21);
-        code8(0xD0);
+        code8(0xC8);
         return;
 
     case tokenizer.bitor:
         // or rax, rdx
         rexw();
         code8(0x09);
-        code8(0xD0);
+        code8(0xC8);
         return;
 
     case tokenizer.bitxor:
         // xor rax, rdx
         rexw();
         code8(0x31);
-        code8(0xD0);
+        code8(0xC8);
         return;
 
     case tokenizer.shift_left:
