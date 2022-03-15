@@ -10,6 +10,26 @@ import "src/writer.co" writer;
 
 zeroes import_file_root[8];
 zeroes parse_top_level_ptr[8];
+zeroes root_root[8];
+
+fn root_ident(ident) [node] {
+    node = root_root[0];
+    return idents.lookup(ident, node);
+}
+
+fn assert_fail_addr() [result] {
+    result = root_ident("assert_fail");
+    @assert(idents.node_get_type(result) == itypes.function_addr);
+    @assert(idents.node_get_attribute(result) == 0); // Shouldn't return
+    return idents.node_get_value(result);
+}
+
+fn main_addr() [result] {
+    result = root_ident("main");
+    @assert(idents.node_get_type(result) == itypes.function_addr);
+    @assert(idents.node_get_attribute(result) == 0); // Shouldn't return
+    return idents.node_get_value(result);
+}
 
 fn parse_comptime_decl() [value_node, value] {
     codegen.discard();
@@ -334,6 +354,11 @@ fn parse_zeroes() [ident, tmp] {
 
 fn parse_top_level() {
     codegen.current_file_root[0] = idents.alloc();
+    if(root_root[0]) {
+
+    } else {
+        root_root[0] = codegen.current_file_root[0];
+    }
     add_builtins_to_current_file();
 
     loop {

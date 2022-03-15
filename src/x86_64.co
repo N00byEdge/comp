@@ -1,5 +1,6 @@
 import "src/builtins.co" builtins;
 import "src/codegen.co" codegen;
+import "src/compiler.co" compiler;
 import "src/identifier_types.co" itypes;
 import "src/tokenizer.co" tokenizer;
 import "src/writer.co" writer;
@@ -727,6 +728,16 @@ fn add_elf_entry_point(main) [retval] {
     return retval;
 }
 
+fn jmp_to_assert_fail() [addr] {
+    addr = compiler.assert_fail_addr();
+    jmp_to(addr);
+}
+
+fn insert_assert_fail_offset(extra_offset) [addr] {
+    addr = compiler.assert_fail_addr();
+    ref_riprel32(addr, extra_offset);
+}
+
 fn builtin_todo() {
     put_opt_arg_in_reg(rdi);
     load_reg_value(rsi, 0);
@@ -734,8 +745,7 @@ fn builtin_todo() {
 
     codegen.expr_returns[0] = 0;
 
-    // jmp assert_fail
-    jmp_to(0x41414141);
+    jmp_to_assert_fail();
 }
 
 fn builtin_panic() {
@@ -745,8 +755,7 @@ fn builtin_panic() {
 
     codegen.expr_returns[0] = 0;
 
-    // jmp assert_fail
-    jmp_to(0x41414141);
+    jmp_to_assert_fail();
 }
 
 fn builtin_assert() {
@@ -757,8 +766,14 @@ fn builtin_assert() {
     load_reg_value(rdx, 0);
 
     // test rax, rax
+    rexw();
+    code8(0x85);
+    code8(0xC0);
 
     // jz assert_fail
+    code8(0x0F);
+    code8(0x84);
+    insert_assert_fail_offset(0);
 }
 
 fn builtin_write8() {
