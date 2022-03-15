@@ -214,7 +214,9 @@ fn write_riprel32_to_here(code_addr) [rip_at_jmp, rel] {
 }
 
 fn ref_riprel32(addr, extra_offset) {
-    addr -= writer.code_addr() + (4 + extra_offset);
+    addr -= writer.code_addr();
+    addr -= extra_offset;
+    addr -= 4;
     code32(addr);
 }
 
@@ -592,6 +594,11 @@ fn make_switch() [switch_table_addr] {
     return writer.code_addr() - 5;
 }
 
+fn endcase_to_here(endcase_addr) {
+    endcase_addr += 1;
+    write_riprel32_to_here(endcase_addr);
+}
+
 fn make_loop_break() {
     jmp_riprel8(5); // Jump past next jmp
 
@@ -728,6 +735,7 @@ fn builtin_todo() {
     codegen.expr_returns[0] = 0;
 
     // jmp assert_fail
+    jmp_to(0x41414141);
 }
 
 fn builtin_panic() {
@@ -738,6 +746,7 @@ fn builtin_panic() {
     codegen.expr_returns[0] = 0;
 
     // jmp assert_fail
+    jmp_to(0x41414141);
 }
 
 fn builtin_assert() {
@@ -823,13 +832,19 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
         endcase;
 
     case itypes.runtime_reference:
-        pop_reg(rcx);
-        load_reg_relative_to_reg(rcx, rcx, 0); // deref it
+        if(codegen.lhs_is_saved(lhs_type, rhs_type)) {
+            pop_reg(rcx);
+            load_reg_relative_to_reg(rcx, rcx, 0); // deref it
+        } else {
+            load_reg_relative_to_reg(rax, rax, 0); // deref it
+        }
         lhs_type = itypes.runtime_int;
         endcase;
 
     case itypes.runtime_int:
-        pop_reg(rcx);
+        if(codegen.lhs_is_saved(lhs_type, rhs_type)) {
+            pop_reg(rcx);
+        } else { }
         // endcase;
     }
 
@@ -838,7 +853,7 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
             @todo("x86_64 do_binary_op comptime default op");
 
         case tokenizer.addition:
-            put_value_in_reg(rax, lhs_type, lhs_value, 0);
+            put_value_in_reg(rax, lhs_type, lhs_value, 1);
             if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
                 // add rax, imm32
                 rexw();
@@ -850,7 +865,7 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
             }
 
         case tokenizer.subtraction:
-            put_value_in_reg(rax, lhs_type, lhs_value, 0);
+            put_value_in_reg(rax, lhs_type, lhs_value, 1);
             if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
                 // sub rax, imm32
                 rexw();
@@ -862,7 +877,7 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
             }
 
         case tokenizer.multiplication:
-            put_value_in_reg(rax, lhs_type, lhs_value, 0);
+            put_value_in_reg(rax, lhs_type, lhs_value, 1);
             if(rhs_value == 8) { // Most common multiplication is by 8 (in array subscript)
                 // shl rax, 3
                 rexw();
@@ -1641,6 +1656,7 @@ fn init() {
     codegen.jmp_to_ptr[0] = jmp_to;
     codegen.do_call_addr_ptr[0] = do_call_addr;
     codegen.make_switch_ptr[0] = make_switch;
+    codegen.endcase_to_here_ptr[0] = endcase_to_here;
     codegen.make_loop_break_ptr[0] = make_loop_break;
     codegen.loop_break_to_here_ptr[0] = loop_break_to_here;
     codegen.if_condition_ptr[0] = if_condition;

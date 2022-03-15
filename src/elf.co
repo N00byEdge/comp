@@ -177,13 +177,19 @@ fn write(fd) [offset, i] {
         add_data(tmp, 8); // paddr
 
         // filesz
-        tmp[0] = writer.section_offset(i);
+        if(i == writer.bss) {
+            tmp[0] = 0;
+        } else {
+            tmp[0] = writer.section_offset(i);
+        }
         add_data(tmp, 8);
 
         tmp[0] += 0xFFF;
         tmp[0] &= ~0xFFF;
 
-        offset += tmp[0];
+        if(i != writer.bss) {
+            offset += tmp[0];
+        } else { }
 
         // memsz
         tmp[0] = writer.section_offset(i);

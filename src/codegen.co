@@ -101,6 +101,14 @@ fn should_rewind_lhs_save(lhs_type, rhs_type) {
     }
 }
 
+fn lhs_is_saved(lhs_type, rhs_type) {
+    if(itype_is_in_reg(lhs_type)) {
+        return itype_is_in_reg(rhs_type);
+    } else {
+        return 0;
+    }
+}
+
 zeroes add_symbol_ptr[8];
 
 fn add_symbol(num_args, local_var_space, total_stack_space) {
@@ -158,6 +166,16 @@ fn make_switch() {
         @call(make_switch_ptr[0]);
     } else {
         tokenizer.error("make_switch not implemented!");
+    }
+}
+
+zeroes endcase_to_here_ptr[8];
+
+fn endcase_to_here(endcase_jmp_addr) {
+    if(endcase_to_here_ptr[0]) {
+        @call(endcase_to_here_ptr[0], endcase_jmp_addr);
+    } else {
+        tokenizer.error("endcase_to_here not implemented!");
     }
 }
 
@@ -315,53 +333,52 @@ fn eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
                 case tokenizer.less_than:
                     eval_value[0] = lhs_value < rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.greater_than:
                     eval_value[0] = lhs_value > rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.less_than_equal:
                     eval_value[0] = lhs_value <= rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.greater_than_equal:
                     eval_value[0] = lhs_value >= rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.bitand:
                     eval_value[0] = lhs_value & rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.bitor:
                     eval_value[0] = lhs_value | rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.bitxor:
                     eval_value[0] = lhs_value ^ rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.addition:
                     eval_value[0] = lhs_value + rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.subtraction:
                     eval_value[0] = lhs_value - rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.multiplication:
                     eval_value[0] = lhs_value * rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.modulus:
                     eval_value[0] = lhs_value % rhs_value;
-                    endcase;
+                    return;
 
                 case tokenizer.division:
                     eval_value[0] = lhs_value / rhs_value;
-                    endcase;
+                    return;
                 }
-                return;
             } else {
                 // Operand inversion can help with eliminating comptime_ints from
                 // the lhs, which allows the backend to generate better code
@@ -585,7 +602,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, lhs_attr, op, rhs_type, rhs_value,
                 // Runtime index. Darn.
                 rhs_type = eval_type[0];
                 rhs_value = eval_value[0];
-                do_binary_op(lhs_type, 0, tokenizer.addition, rhs_type, rhs_value);
+                do_binary_op(lhs_type, lhs_value, tokenizer.addition, rhs_type, rhs_value);
                 lhs_type = itypes.runtime_reference;
                 endcase;
 
@@ -908,7 +925,6 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
             expect_token(tokenizer.closing_curly_brace, "Expected `}` after loop body");
             discard();
 
-            break_addr[0] = save0;
             continue_addr[0] = save1;
 
             if(break_was_used[0]) {
@@ -917,11 +933,16 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
                 tmp = break_addr[0];
                 loop_break_to_here(tmp);
 
+                break_addr[0] = save0;
+
                 // The code after us is used!
                 continue;
             } else {
                 break_was_used[0] = tmp; // Restore old
                 // Can we reach the code after this?
+
+                break_addr[0] = save0;
+
                 if(can_be_exited) {
                     endcase;
                 } else {
@@ -1007,8 +1028,11 @@ fn parse_block() [tmp, save0, save1, save2, can_be_exited] {
             discard();
 
             switch_table[0] = tmp;
-            endcase_addr[0] = save1;
             switch_default_addr[0] = save2;
+
+            tmp = endcase_addr[0];
+            endcase_to_here(tmp);
+            endcase_addr[0] = save1;
 
             if(endcase_was_used[0] | can_be_exited) {
                 endcase_was_used[0] = save0;
