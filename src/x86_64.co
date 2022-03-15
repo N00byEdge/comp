@@ -780,19 +780,19 @@ fn builtin_write32() {
 }
 
 fn builtin_read8() {
-    put_arg_in_reg(rdi);
+    put_arg_in_reg(rsi);
     load_reg_value(rax, 0); // Clear upper bits
     lodsb();
 }
 
 fn builtin_read16() {
-    put_arg_in_reg(rdi);
+    put_arg_in_reg(rsi);
     load_reg_value(rax, 0); // Clear upper bits
     lodsw();
 }
 
 fn builtin_read32() {
-    put_arg_in_reg(rdi);
+    put_arg_in_reg(rsi);
     load_reg_value(rax, 0); // Clear upper bits
     lodsd();
 }
