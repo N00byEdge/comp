@@ -562,7 +562,6 @@ fn fill_token(node) [chr] {
                     return;
 
                 case '=': source.consume(2);
-                    source.consume(2);
                     token_type[0] = division_inplace;
                     return;
 
