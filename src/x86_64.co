@@ -1405,6 +1405,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 @todo("x86_64 do_inplace_op comptime modulus global_variable");
 
             case itypes.local_variable:
+                load_reg_value(rdx, 0); // Upper half
                 load_local_variable(rax, lhs_value); // Lower half
                 load_reg_value(rcx, rhs_value);
 
@@ -1426,6 +1427,7 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 @todo("x86_64 do_inplace_op comptime division global_variable");
 
             case itypes.local_variable:
+                load_reg_value(rdx, 0); // Upper half
                 load_local_variable(rax, lhs_value); // Lower half
                 load_reg_value(rcx, rhs_value);
 
