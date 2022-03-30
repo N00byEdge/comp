@@ -847,19 +847,20 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
         endcase;
 
     case itypes.runtime_reference:
-        if(codegen.lhs_is_saved(lhs_type, rhs_type)) {
+        if(codegen.lhs_not_saved(lhs_type, rhs_type)) {
+            load_reg_relative_to_reg(rax, rax, 0); // deref it
+        } else {
             pop_reg(rcx);
             load_reg_relative_to_reg(rcx, rcx, 0); // deref it
-        } else {
-            load_reg_relative_to_reg(rax, rax, 0); // deref it
         }
         lhs_type = itypes.runtime_int;
         endcase;
 
     case itypes.runtime_int:
-        if(codegen.lhs_is_saved(lhs_type, rhs_type)) {
+        if(codegen.lhs_not_saved(lhs_type, rhs_type)) {
+        } else {
             pop_reg(rcx);
-        } else { }
+        }
         // endcase;
     }
 
@@ -1007,9 +1008,21 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
         case tokenizer.greater_than_equal:
         case tokenizer.equals:
         case tokenizer.not_equals:
-            put_value_in_reg(rax, rhs_type, rhs_value, 1);
             switch(lhs_type) {
+                @todo("x86_64 do_inplace_op runtime compare default lhs");
+
+            case itypes.runtime_int:
+                put_value_in_reg(rcx, lhs_type, lhs_value, 1);
+                put_value_in_reg(rax, rhs_type, rhs_value, 1);
+
+                // cmp rcx, rax
+                rexw();
+                code8(0x39);
+                code8(0xC1);
+                endcase;
+
             case itypes.local_variable:
+                put_value_in_reg(rax, rhs_type, rhs_value, 1);
                 // cmp [rbp - offset], rax
                 rexw();
                 code8(0x39);
@@ -1063,21 +1076,21 @@ fn do_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
         return;
 
     case tokenizer.bitand:
-        // and rax, rdx
+        // and rax, rcx
         rexw();
         code8(0x21);
         code8(0xC8);
         return;
 
     case tokenizer.bitor:
-        // or rax, rdx
+        // or rax, rcx
         rexw();
         code8(0x09);
         code8(0xC8);
         return;
 
     case tokenizer.bitxor:
-        // xor rax, rdx
+        // xor rax, rcx
         rexw();
         code8(0x31);
         code8(0xC8);
@@ -1175,12 +1188,12 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
             case itypes.runtime_reference:
                 if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
-                    pop_reg(rcx);
+                    @assert(codegen.lhs_not_saved(lhs_type, rhs_type));
 
-                    // mov qword[rcx], imm32
+                    // mov qword[rax], imm32
                     rexw();
                     code8(0xC7);
-                    code8(0x01);
+                    code8(0x00);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1218,12 +1231,12 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
             case itypes.runtime_reference:
                 if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
-                    pop_reg(rcx);
+                    @assert(codegen.lhs_not_saved(lhs_type, rhs_type));
 
-                    // add qword[rcx], imm32
+                    // add qword[rax], imm32
                     rexw();
                     code8(0x81);
-                    code8(0x01);
+                    code8(0x00);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1261,12 +1274,12 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
             case itypes.runtime_reference:
                 if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
-                    pop_reg(rcx);
+                    @assert(codegen.lhs_not_saved(lhs_type, rhs_type));
 
-                    // sub qword[rcx], imm32
+                    // sub qword[rax], imm32
                     rexw();
                     code8(0x81);
-                    code8(0x29);
+                    code8(0x28);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1336,12 +1349,12 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
 
             case itypes.runtime_reference:
                 if((rhs_value <= 0x7FFFFFFF) | (rhs_value >= 0xFFFFFFFF80000000)) {
-                    pop_reg(rcx);
+                    @assert(codegen.lhs_not_saved(lhs_type, rhs_type));
 
-                    // or qword[rcx], imm32
+                    // or qword[rax], imm32
                     rexw();
                     code8(0x81);
-                    code8(0x09);
+                    code8(0x08);
                     code32(rhs_value);
                     return;
                 } else {
@@ -1389,12 +1402,12 @@ fn do_inplace_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                 return;
 
             case itypes.runtime_reference:
-                pop_reg(rcx);
+                @assert(codegen.lhs_not_saved(lhs_type, rhs_type));
 
-                // shl [rcx], rhs_value
+                // shl [rax], rhs_value
                 rexw();
                 code8(0xC1);
-                code8(0x21);
+                code8(0x20);
                 code8(rhs_value);
                 return;
             }

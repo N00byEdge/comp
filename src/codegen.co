@@ -82,28 +82,45 @@ fn rewind_restore(rewind_buffer) [ptr, len] {
 
 zeroes expr_returns[8];
 
-fn itype_is_in_reg(lhs_type) {
-    if(lhs_type == itypes.runtime_reference) {
+fn itype_is_in_reg(itype) {
+    if(itype == itypes.runtime_reference) {
         return 1;
     } else { }
-    if(lhs_type == itypes.runtime_int) {
+    if(itype == itypes.runtime_int) {
         return 1;
     } else { }
     return 0;
 }
 
-fn should_rewind_lhs_save(lhs_type, rhs_type) {
-    if(itype_is_in_reg(lhs_type)) {
-        // We should rewind the save if the rhs never clobbered
-        return itype_is_in_reg(rhs_type) == 0;
-    } else {
+fn itype_is_mem_deref(itype) {
+    switch(itype) {
         return 0;
+    case itypes.local_variable:
+    case itypes.local_buffer:
+    case itypes.global_variable:
+    case itypes.runtime_reference:
+        return 1;
     }
 }
 
-fn lhs_is_saved(lhs_type, rhs_type) {
+fn lhs_not_saved(lhs_type, rhs_type) {
     if(itype_is_in_reg(lhs_type)) {
-        return itype_is_in_reg(rhs_type);
+        if(itype_is_mem_deref(lhs_type)) {
+            if(itype_is_mem_deref(rhs_type)) {
+                // Both are memrefs, we can't use
+                // mov [rax], [rbp - offset]
+                // so we might as well make it
+                // push rax
+                // mov rax, [rbp - offset]
+                // pop rcx
+                // mov [rcx], rax
+                // (until we have proper reg allocation)
+                return 0;
+            } else { }
+        } else { }
+
+        // We should rewind the save if the rhs never clobbered
+        return itype_is_in_reg(rhs_type) == 0;
     } else {
         return 0;
     }
@@ -724,7 +741,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, lhs_attr, op, rhs_type, rhs_value,
             rhs_type = eval_type[0];
             rhs_value = eval_value[0];
 
-            if(should_rewind_lhs_save(lhs_type, rhs_type)) {
+            if(lhs_not_saved(lhs_type, rhs_type)) {
                 rewind_restore(rewind_buffer);
             } else { }
 
@@ -767,7 +784,7 @@ fn eval_expr(expr_mode) [lhs_type, lhs_value, lhs_attr, op, rhs_type, rhs_value,
             rhs_type = eval_type[0];
             rhs_value = eval_value[0];
 
-            if(should_rewind_lhs_save(lhs_type, rhs_type)) {
+            if(lhs_not_saved(lhs_type, rhs_type)) {
                 rewind_restore(rewind_buffer);
             } else { }
 
