@@ -403,19 +403,19 @@ fn eval_binary_op(lhs_type, lhs_value, op, rhs_type, rhs_value) {
                     @todo("do_binary_op invert default");
 
                 case tokenizer.less_than:
-                    op = tokenizer.greater_than_equal;
-                    endcase;
-
-                case tokenizer.less_than_equal:
                     op = tokenizer.greater_than;
                     endcase;
 
+                case tokenizer.less_than_equal:
+                    op = tokenizer.greater_than_equal;
+                    endcase;
+
                 case tokenizer.greater_than:
-                    op = tokenizer.less_than_equal;
+                    op = tokenizer.less_than;
                     endcase;
 
                 case tokenizer.greater_than_equal:
-                    op = tokenizer.less_than;
+                    op = tokenizer.less_than_equal;
                     endcase;
 
                 case tokenizer.subtraction:
